@@ -1,0 +1,374 @@
+:root {
+  --bg: #f5efe4;
+  --surface: rgba(255, 250, 242, 0.92);
+  --surface-strong: #fff8f0;
+  --text: #1e1b18;
+  --muted: #6e6459;
+  --line: rgba(49, 39, 28, 0.12);
+  --accent: #d86f2d;
+  --accent-deep: #8a3f17;
+  --accent-soft: #f2bf88;
+  --success: #206247;
+  --shadow: 0 18px 50px rgba(59, 44, 29, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Georgia, "Times New Roman", serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top, rgba(255, 196, 120, 0.5), transparent 30%),
+    linear-gradient(180deg, #f0e3d0 0%, #f7f1e8 45%, #efe7db 100%);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 1.25rem;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 1rem;
+  padding: 1rem 0 1.5rem;
+}
+
+.hero h1,
+.panel h2,
+.panel h3 {
+  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+  letter-spacing: -0.03em;
+  margin: 0;
+}
+
+.hero h1 {
+  font-size: clamp(2.2rem, 7vw, 4.2rem);
+  line-height: 0.96;
+  max-width: 14ch;
+}
+
+.hero-copy {
+  max-width: 55ch;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.hero-card,
+.panel,
+.stat-card,
+.climb-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+}
+
+.hero-card,
+.panel {
+  border-radius: 28px;
+  padding: 1rem;
+}
+
+.hero-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 220px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 239, 221, 0.95)),
+    #fff;
+}
+
+.hero-stat-label,
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.75rem;
+  color: var(--accent-deep);
+  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+}
+
+.hero-stat {
+  font-size: 4rem;
+  margin: 0;
+  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+}
+
+.recommendation {
+  margin: 0;
+  padding: 0.8rem 0.9rem;
+  border-radius: 18px;
+  background: rgba(216, 111, 45, 0.12);
+  color: var(--accent-deep);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.status-banner {
+  margin-bottom: 1rem;
+}
+
+.stack,
+.stack-sm,
+.feed {
+  display: grid;
+  gap: 1rem;
+}
+
+.stack-sm {
+  gap: 0.85rem;
+}
+
+.section-title-row {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.field span {
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 0.8rem 0.95rem;
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--text);
+}
+
+.two-col,
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.primary-button,
+.profile-chip,
+.tag-button {
+  border: 0;
+  border-radius: 999px;
+  transition: transform 120ms ease, background 120ms ease;
+}
+
+.primary-button {
+  padding: 0.9rem 1.1rem;
+  background: linear-gradient(180deg, var(--accent) 0%, #b84f18 100%);
+  color: white;
+  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+}
+
+.primary-button:hover,
+.profile-chip:hover,
+.tag-button:hover {
+  transform: translateY(-1px);
+}
+
+.profile-list,
+.tag-grid,
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.profile-chip,
+.tag-button,
+.badge,
+.mini-badge {
+  padding: 0.45rem 0.8rem;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+
+.profile-chip.selected,
+.tag-button.selected,
+.badge.active,
+.badge.completed,
+.mini-badge.ready {
+  background: rgba(216, 111, 45, 0.18);
+  border-color: rgba(216, 111, 45, 0.35);
+  color: var(--accent-deep);
+}
+
+.badge.attempted {
+  background: rgba(43, 51, 58, 0.08);
+}
+
+.badge,
+.mini-badge {
+  border-radius: 999px;
+  font-size: 0.8rem;
+}
+
+.xp-badge {
+  font-weight: 700;
+}
+
+.stats-grid {
+  margin-bottom: 1rem;
+}
+
+.stat-card {
+  padding: 0.9rem;
+  border-radius: 22px;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.stat-card strong {
+  font-size: 1.3rem;
+}
+
+.grade-breakdown {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.grade-row {
+  display: grid;
+  grid-template-columns: 48px 1fr 28px 72px;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.grade-bar-track {
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(52, 41, 31, 0.08);
+}
+
+.grade-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-soft), var(--accent));
+}
+
+.climb-card {
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.climb-photo {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  display: block;
+  background: #ead8c3;
+}
+
+.climb-photo.placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+.climb-content {
+  padding: 1rem;
+}
+
+.xp-line {
+  color: var(--accent-deep);
+  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+}
+
+.message {
+  margin: 0;
+  padding: 0.85rem 0.95rem;
+  border-radius: 16px;
+}
+
+.message.error {
+  background: rgba(147, 29, 29, 0.1);
+  color: #7e2222;
+}
+
+.message.success {
+  background: rgba(32, 98, 71, 0.12);
+  color: var(--success);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.helper-copy {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.setup-panel {
+  max-width: 620px;
+  margin: 6rem auto;
+}
+
+@media (max-width: 960px) {
+  .hero,
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .shell {
+    padding: 0.8rem;
+  }
+
+  .hero-card,
+  .panel {
+    border-radius: 22px;
+  }
+
+  .two-col,
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .grade-row {
+    grid-template-columns: 44px 1fr 28px;
+  }
+
+  .grade-row .mini-badge {
+    grid-column: 2 / 4;
+    justify-self: start;
+  }
+}
