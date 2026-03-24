@@ -1,64 +1,93 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
+import { CLIMB_GRADES, DEFAULT_FORM, STYLE_TAG_GROUPS, climbToXp } from "@/lib/xp";
+import { uploadPhoto } from "@/lib/local-store";
+import { hasSupabaseConfig } from "@/lib/supabase/client";
 import {
-  CLIMB_GRADES,
-  DEFAULT_FORM,
-  STYLE_TAGS,
-  gradeToXp,
-  hasGraduatedGrade,
-  nextGradeRecommendation
-} from "@/lib/xp";
-import {
-  createProfile,
-  fetchClimbsForProfile,
-  fetchProfiles,
-  supabaseReady,
-  uploadPhoto,
-  saveClimb
-} from "@/lib/supabase/client";
+  deleteClimbForUser,
+  deleteCurrentAccount,
+  ensureProfile,
+  fetchClimbsForUser,
+  fetchProfile,
+  getCurrentUser,
+  saveClimbForUser,
+  signInWithEmail,
+  signOutUser,
+  signUpWithEmail,
+  subscribeToAuthChanges,
+  updateDisplayName,
+  updateClimbForUser
+} from "@/lib/supabase-store";
 import type { ClimbInsert, ClimbRow, ProfileRow, StyleTag } from "@/lib/types";
-import { buildStats, prettyDate } from "@/lib/stats";
+import { buildProgressStats, buildStats, prettyDate, PROGRESS_RANGES, type ProgressRange } from "@/lib/stats";
 
 export default function HomePage() {
-  const [profiles, setProfiles] = useState<ProfileRow[]>([]);
-  const [activeProfileId, setActiveProfileId] = useState<string>("");
+  const [activeProfile, setActiveProfile] = useState<ProfileRow | null>(null);
+  const [activeProfileId, setActiveProfileId] = useState("");
   const [climbs, setClimbs] = useState<ClimbRow[]>([]);
+  const [currentUserEmail, setCurrentUserEmail] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signup");
+  const [activeView, setActiveView] = useState<"home" | "account" | "progress">("home");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [accountDisplayName, setAccountDisplayName] = useState("");
   const [form, setForm] = useState(DEFAULT_FORM);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraCaptureInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraButtonRef = useRef<HTMLButtonElement | null>(null);
   const [loading, setLoading] = useState(false);
   const [booting, setBooting] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [activeAction, setActiveAction] = useState<"profile" | "climb" | "switch" | "load" | "">("");
+  const [activeAction, setActiveAction] = useState<"auth" | "rename" | "logout" | "account-delete" | "climb" | "edit" | "load" | "delete" | "">("");
+  const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
+  const [climbPendingDelete, setClimbPendingDelete] = useState<ClimbRow | null>(null);
+  const [editingClimb, setEditingClimb] = useState<ClimbRow | null>(null);
+  const [isComposerOpen, setIsComposerOpen] = useState(false);
+  const [showSaveBurst, setShowSaveBurst] = useState(false);
+  const [historyGradeFilter, setHistoryGradeFilter] = useState<"All" | ClimbRow["grade"]>("All");
+  const [progressRange, setProgressRange] = useState<ProgressRange>("3M");
 
   useEffect(() => {
-    const savedProfileId = window.localStorage.getItem("climb-active-profile-id") ?? "";
-    void initialize(savedProfileId);
+    if (!hasSupabaseConfig()) {
+      setBooting(false);
+      return;
+    }
+
+    void initialize();
+
+    const unsubscribe = subscribeToAuthChanges((user) => {
+      setCurrentUserEmail(user?.email ?? "");
+      void syncUserData(user?.id ?? "");
+    });
+
+    return unsubscribe;
   }, []);
 
-  async function initialize(savedProfileId?: string) {
+  useEffect(() => {
+    if (!isComposerOpen) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      cameraButtonRef.current?.focus();
+    }, 120);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isComposerOpen]);
+
+  async function initialize() {
     try {
       setBooting(true);
       setActiveAction("load");
       setError("");
-
-      if (!supabaseReady) {
-        return;
-      }
-
-      const allProfiles = await fetchProfiles();
-      setProfiles(allProfiles);
-
-      const fallbackId = savedProfileId || allProfiles[0]?.id || "";
-      if (fallbackId) {
-        setActiveProfileId(fallbackId);
-        window.localStorage.setItem("climb-active-profile-id", fallbackId);
-        const profileClimbs = await fetchClimbsForProfile(fallbackId);
-        setClimbs(profileClimbs);
-      }
+      const user = await getCurrentUser();
+      await syncUserData(user?.id ?? "");
     } catch (err) {
       setError(getMessage(err));
     } finally {
@@ -67,10 +96,39 @@ export default function HomePage() {
     }
   }
 
-  async function handleProfileCreate(event: React.FormEvent<HTMLFormElement>) {
+  async function syncUserData(userId: string) {
+    if (!userId) {
+      setActiveProfile(null);
+      setActiveProfileId("");
+      setCurrentUserEmail("");
+      setAccountDisplayName("");
+      setClimbs([]);
+      setEditingClimb(null);
+      setIsComposerOpen(false);
+      setActiveView("home");
+      setIsMenuOpen(false);
+      return;
+    }
+
+    const profile = await fetchProfile(userId);
+    setActiveProfile(profile);
+    setActiveProfileId(userId);
+    setAccountDisplayName(profile?.display_name ?? "");
+
+    const profileClimbs = await fetchClimbsForUser(userId);
+    setClimbs(profileClimbs);
+  }
+
+  async function handleAuthSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!displayName.trim()) {
+    if (!email.trim() || !password.trim()) {
+      setError("Add your email and password first.");
+      setSuccess("");
+      return;
+    }
+
+    if (authMode === "signup" && !displayName.trim()) {
       setError("Add a display name first.");
       setSuccess("");
       return;
@@ -78,19 +136,32 @@ export default function HomePage() {
 
     try {
       setLoading(true);
-      setActiveAction("profile");
+      setActiveAction("auth");
       setError("");
       setSuccess("");
 
-      const profile = await createProfile(displayName.trim());
-      const updatedProfiles = [profile, ...profiles];
-      setProfiles(updatedProfiles);
-      setDisplayName("");
-      setActiveProfileId(profile.id);
-      window.localStorage.setItem("climb-active-profile-id", profile.id);
-      const profileClimbs = await fetchClimbsForProfile(profile.id);
-      setClimbs(profileClimbs);
-      setSuccess("Profile created. You can start logging climbs now.");
+      if (authMode === "signup") {
+        const user = await signUpWithEmail(email.trim(), password, displayName.trim());
+        if (!user) {
+          throw new Error("Account created, but no session was returned. In Supabase, turn off email confirmation for now or sign in after confirming your email.");
+        }
+
+        await ensureProfile(user.id, displayName.trim());
+        setCurrentUserEmail(user.email ?? "");
+        await syncUserData(user.id);
+        setSuccess("Account created. You can start logging climbs now.");
+      } else {
+        const user = await signInWithEmail(email.trim(), password);
+        setCurrentUserEmail(user.email ?? "");
+        await syncUserData(user.id);
+        setSuccess("Signed in.");
+      }
+
+      setEmail("");
+      setPassword("");
+      if (authMode === "signup") {
+        setDisplayName("");
+      }
     } catch (err) {
       setError(getMessage(err));
     } finally {
@@ -99,17 +170,15 @@ export default function HomePage() {
     }
   }
 
-  async function handleProfileSwitch(profileId: string) {
-    setActiveProfileId(profileId);
-    window.localStorage.setItem("climb-active-profile-id", profileId);
-    setSuccess("");
-    setError("");
-
+  async function handleSignOut() {
     try {
       setLoading(true);
-      setActiveAction("switch");
-      const profileClimbs = await fetchClimbsForProfile(profileId);
-      setClimbs(profileClimbs);
+      setActiveAction("logout");
+      setError("");
+      setSuccess("");
+      await signOutUser();
+      await syncUserData("");
+      setSuccess("Signed out.");
     } catch (err) {
       setError(getMessage(err));
     } finally {
@@ -118,47 +187,29 @@ export default function HomePage() {
     }
   }
 
-  async function handleClimbSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleDisplayNameSave(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!activeProfileId) {
-      setError("Create or choose a profile first.");
+      return;
+    }
+
+    if (!accountDisplayName.trim()) {
+      setError("Add a display name first.");
       setSuccess("");
       return;
     }
 
     try {
       setLoading(true);
-      setActiveAction("climb");
+      setActiveAction("rename");
       setError("");
       setSuccess("");
 
-      let photoUrl = "";
-      if (photoFile) {
-        photoUrl = await uploadPhoto(photoFile);
-      }
-
-      const climbPayload: ClimbInsert = {
-        profile_id: activeProfileId,
-        photo_url: photoUrl || null,
-        grade: form.grade,
-        style_tags: form.styleTags,
-        wall_name: form.description.trim() || null,
-        notes: form.notes.trim() || null,
-        status: form.status,
-        climbed_on: form.date
-      };
-
-      await saveClimb(climbPayload);
-      const updatedClimbs = await fetchClimbsForProfile(activeProfileId);
-      setClimbs(updatedClimbs);
-      setForm(DEFAULT_FORM);
-      setPhotoFile(null);
-      const input = document.getElementById("photo-upload") as HTMLInputElement | null;
-      if (input) {
-        input.value = "";
-      }
-      setSuccess("Climb logged.");
+      const updatedProfile = await updateDisplayName(activeProfileId, accountDisplayName.trim());
+      setActiveProfile(updatedProfile);
+      setAccountDisplayName(updatedProfile.display_name);
+      setSuccess("Name updated.");
     } catch (err) {
       setError(getMessage(err));
     } finally {
@@ -167,45 +218,208 @@ export default function HomePage() {
     }
   }
 
-  const stats = useMemo(() => buildStats(climbs), [climbs]);
-  const recommendation = useMemo(() => nextGradeRecommendation(stats.completedByGrade), [stats.completedByGrade]);
-  const activeProfile = profiles.find((profile) => profile.id === activeProfileId) ?? null;
+  async function handleAccountDelete() {
+    if (!window.confirm("Delete your account and all climbs? This cannot be undone.")) {
+      return;
+    }
 
-  if (!supabaseReady) {
-    return (
-      <main className="shell">
-        <section className="panel setup-panel">
-          <p className="eyebrow">Setup needed</p>
-          <h1>Climb Tracker</h1>
-          <p>
-            Add your Supabase keys to <code>.env.local</code> before running the app.
-          </p>
-          <p className="muted">
-            The exact steps are included in <code>README.md</code>.
-          </p>
-        </section>
-      </main>
-    );
+    try {
+      setLoading(true);
+      setActiveAction("account-delete");
+      setError("");
+      setSuccess("");
+      await deleteCurrentAccount();
+      await syncUserData("");
+      setSuccess("Account deleted.");
+    } catch (err) {
+      setError(getMessage(err));
+    } finally {
+      setLoading(false);
+      setActiveAction("");
+    }
   }
 
-  return (
-    <main className="shell">
-      <section className="hero">
-        <div>
-          <p className="eyebrow">Gym Progress Tracker</p>
-          <h1>Keep every climb, session, and small win in one place.</h1>
-          <p className="hero-copy">
-            Log climbs fast on your phone, see which styles you love, and get a nudge when you are ready for the next grade.
-          </p>
-        </div>
-        <div className="hero-card">
-          <p className="hero-stat-label">Current level</p>
-          <p className="hero-stat">{stats.level}</p>
-          <p className="muted">{stats.xp} XP earned from completed climbs</p>
-          <p className="recommendation">{recommendation}</p>
-        </div>
-      </section>
+  function selectView(view: "home" | "account" | "progress") {
+    setActiveView(view);
+    setIsMenuOpen(false);
+  }
 
+  function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const selected = event.target.files?.[0] ?? null;
+
+    if (!selected) {
+      setPhotoFile(null);
+      return;
+    }
+
+    if (!selected.type.startsWith("image/")) {
+      setError("Please choose an image file.");
+      setSuccess("");
+      setPhotoFile(null);
+      event.target.value = "";
+      return;
+    }
+
+    setError("");
+    setPhotoFile(selected);
+  }
+  async function handleClimbSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!activeProfileId) {
+      setError("Create your climber profile first.");
+      setSuccess("");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setActiveAction(editingClimb ? "edit" : "climb");
+      setError("");
+      setSuccess("");
+
+      let photoUrl = editingClimb?.photo_url ?? "";
+      if (photoFile) {
+        photoUrl = await uploadPhoto(photoFile);
+      }
+
+      const climbPayload: Omit<ClimbInsert, "profile_id"> = {
+        photo_url: photoUrl || null,
+        grade: form.grade,
+        flashed: form.flashed,
+        grade_modifier: form.gradeModifier,
+        style_tags: form.styleTags,
+        wall_name: form.description.trim() || null,
+        notes: form.notes.trim() || null,
+        status: "completed",
+        climbed_on: form.date
+      };
+
+      if (editingClimb) {
+        await updateClimbForUser(activeProfileId, editingClimb.id, climbPayload);
+      } else {
+        await saveClimbForUser(activeProfileId, climbPayload);
+      }
+      const updatedClimbs = await fetchClimbsForUser(activeProfileId);
+      setClimbs(updatedClimbs);
+      setForm(DEFAULT_FORM);
+      setPhotoFile(null);
+      setEditingClimb(null);
+      if (photoInputRef.current) {
+        photoInputRef.current.value = "";
+      }
+      if (cameraCaptureInputRef.current) {
+        cameraCaptureInputRef.current.value = "";
+      }
+      setIsComposerOpen(false);
+      setShowSaveBurst(true);
+      window.setTimeout(() => setShowSaveBurst(false), 1600);
+      setSuccess(editingClimb ? "Climb updated." : "Climb logged.");
+    } catch (err) {
+      setError(getMessage(err));
+    } finally {
+      setLoading(false);
+      setActiveAction("");
+    }
+  }
+
+  async function handleDeleteClimb(climbId: string) {
+    try {
+      setLoading(true);
+      setActiveAction("delete");
+      setError("");
+      setSuccess("");
+
+      await deleteClimbForUser(activeProfileId, climbId);
+      if (activeProfileId) {
+        const updatedClimbs = await fetchClimbsForUser(activeProfileId);
+        setClimbs(updatedClimbs);
+      }
+      setClimbPendingDelete(null);
+      setSuccess("Climb deleted.");
+    } catch (err) {
+      setError(getMessage(err));
+    } finally {
+      setLoading(false);
+      setActiveAction("");
+    }
+  }
+
+  function openComposer() {
+    setEditingClimb(null);
+    setForm(DEFAULT_FORM);
+    setPhotoFile(null);
+    if (photoInputRef.current) {
+      photoInputRef.current.value = "";
+    }
+    if (cameraCaptureInputRef.current) {
+      cameraCaptureInputRef.current.value = "";
+    }
+    setIsComposerOpen(true);
+  }
+
+  function openEditor(climb: ClimbRow) {
+    setEditingClimb(climb);
+    setForm({
+      grade: climb.grade,
+      flashed: Boolean(climb.flashed),
+      gradeModifier: climb.grade_modifier ?? null,
+      styleTags: climb.style_tags,
+      description: climb.wall_name ?? "",
+      notes: climb.notes ?? "",
+      date: climb.climbed_on
+    });
+    setPhotoFile(null);
+    if (photoInputRef.current) {
+      photoInputRef.current.value = "";
+    }
+    if (cameraCaptureInputRef.current) {
+      cameraCaptureInputRef.current.value = "";
+    }
+    setIsComposerOpen(true);
+  }
+
+  const stats = useMemo(() => buildStats(climbs), [climbs]);
+  const progressStats = useMemo(() => buildProgressStats(climbs, progressRange), [climbs, progressRange]);
+  const maxGradeCount = useMemo(
+    () => Math.max(1, ...CLIMB_GRADES.map((grade) => stats.completedByGrade[grade] ?? 0)),
+    [stats.completedByGrade]
+  );
+  const filteredClimbs = useMemo(
+    () => climbs.filter((climb) => historyGradeFilter === "All" || climb.grade === historyGradeFilter),
+    [climbs, historyGradeFilter]
+  );
+  const recentClimbs = filteredClimbs.slice(0, 12);
+  const canSaveClimb = Boolean(activeProfileId) && !loading && !booting;
+  const trendChart = useMemo(() => {
+    const buckets = progressStats.buckets;
+    const width = 100;
+    const height = 48;
+    const topPadding = 6;
+    const bottomPadding = 6;
+    const chartHeight = height - topPadding - bottomPadding;
+    const maxValue = Math.max(1, ...buckets.map((bucket) => bucket.climbCount));
+    const yAxisMarks = Array.from(new Set([maxValue, Math.max(0, Math.round(maxValue / 2)), 0])).sort((a, b) => b - a);
+
+    const points = buckets.map((bucket, index) => {
+      const x = buckets.length === 1 ? width / 2 : (index / (buckets.length - 1)) * width;
+      const y = topPadding + chartHeight - (bucket.climbCount / maxValue) * chartHeight;
+      return { x, y, bucket };
+    });
+
+    const linePath = points
+      .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
+      .join(" ");
+
+    const areaPath = points.length
+      ? `${linePath} L ${points[points.length - 1].x.toFixed(2)} ${height - bottomPadding} L ${points[0].x.toFixed(2)} ${height - bottomPadding} Z`
+      : "";
+
+    return { areaPath, linePath, points, yAxisMarks, maxValue, height, topPadding, bottomPadding, chartHeight };
+  }, [progressStats.buckets]);
+
+  return (
+    <main className="shell shell-dashboard">
       {error ? (
         <section className="message error status-banner">
           <strong>Something needs attention:</strong> {error}
@@ -218,90 +432,156 @@ export default function HomePage() {
         </section>
       ) : null}
 
-      <section className="grid">
-        <div className="stack">
-          <section className="panel">
-            <div className="section-title-row">
-              <div>
-                <p className="eyebrow">Profile</p>
-                <h2>Your climber card</h2>
-              </div>
-              {activeProfile ? <span className="badge active">Active</span> : null}
-            </div>
+      {selectedPhotoUrl ? (
+        <div className="lightbox" onClick={() => setSelectedPhotoUrl(null)} role="button" tabIndex={0}>
+          <button
+            className="lightbox-close"
+            onClick={(event) => {
+              event.stopPropagation();
+              setSelectedPhotoUrl(null);
+            }}
+            type="button"
+          >
+            Close
+          </button>
+          <img
+            alt="Full climb"
+            className="lightbox-image"
+            onClick={(event) => event.stopPropagation()}
+            src={selectedPhotoUrl}
+          />
+        </div>
+      ) : null}
 
-            <form className="stack-sm" onSubmit={handleProfileCreate}>
-              <label className="field">
-                <span>Display name</span>
-                <input
-                  type="text"
-                  placeholder="Example: Jaron"
-                  value={displayName}
-                  onChange={(event) => setDisplayName(event.target.value)}
-                />
-              </label>
-              <button className="primary-button" disabled={loading} type="submit">
-                {activeAction === "profile" ? "Creating profile..." : "Create profile"}
+      {climbPendingDelete ? (
+        <div className="lightbox confirm-overlay" onClick={() => setClimbPendingDelete(null)} role="button" tabIndex={0}>
+          <div className="confirm-dialog" onClick={(event) => event.stopPropagation()}>
+            <p className="eyebrow">Delete climb</p>
+            <h2>
+              Remove {climbPendingDelete.grade}
+              {climbPendingDelete.wall_name ? ` / ${climbPendingDelete.wall_name}` : ""}?
+            </h2>
+            <p className="muted">
+              This will remove the climb from your history, update your XP and stats, and delete the photo from cloud storage if it has one.
+            </p>
+            <div className="confirm-actions">
+              <button className="secondary-button" onClick={() => setClimbPendingDelete(null)} type="button">
+                Cancel
               </button>
-            </form>
-
-            <div className="profile-list">
-              {profiles.length === 0 ? (
-                <p className="muted">No profiles yet. Create one above or load the seed data.</p>
-              ) : (
-                profiles.map((profile) => (
-                  <button
-                    className={clsx("profile-chip", profile.id === activeProfileId && "selected")}
-                    key={profile.id}
-                    onClick={() => void handleProfileSwitch(profile.id)}
-                    type="button"
-                  >
-                    {profile.display_name}
-                  </button>
-                ))
-              )}
+              <button
+                className="delete-button"
+                disabled={loading}
+                onClick={() => void handleDeleteClimb(climbPendingDelete.id)}
+                type="button"
+              >
+                {activeAction === "delete" ? "Deleting..." : "Delete climb"}
+              </button>
             </div>
-          </section>
+          </div>
+        </div>
+      ) : null}
 
-          <section className="panel">
-            <div className="section-title-row">
+      {isComposerOpen ? (
+        <div className="composer-root">
+          <div className="composer-backdrop" onClick={() => setIsComposerOpen(false)} />
+          <section className="composer-sheet" onClick={(event) => event.stopPropagation()}>
+            <div className="section-title-row composer-header">
               <div>
-                <p className="eyebrow">New climb</p>
-                <h2>Log a problem</h2>
+                <p className="eyebrow">{editingClimb ? "Edit climb" : "New climb"}</p>
+                <h2>{editingClimb ? "Update climb" : "Add a climb"}</h2>
               </div>
-              <span className="badge">Fast entry</span>
+              <button className="secondary-button" onClick={() => setIsComposerOpen(false)} type="button">
+                Close
+              </button>
             </div>
 
             <p className="muted helper-copy">
-              Add whatever helps you remember the climb. Description, notes, and photo are all optional.
+              {editingClimb ? "Update anything you want to keep track of. Retake the photo only if you want to replace it." : "Save the essentials first. Description and notes are just memory helpers."}
             </p>
 
             <form className="stack-sm" onSubmit={handleClimbSubmit}>
-              <div className="two-col">
-                <label className="field">
-                  <span>Grade</span>
-                  <select
-                    value={form.grade}
-                    onChange={(event) => setForm((current) => ({ ...current, grade: event.target.value as ClimbRow["grade"] }))}
-                  >
-                    {CLIMB_GRADES.map((grade) => (
-                      <option key={grade} value={grade}>
-                        {grade}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+              <label className="field">
+                <span>Photo</span>
+                <div className="photo-button-row">
+                  <button className="camera-button" onClick={() => cameraCaptureInputRef.current?.click()} ref={cameraButtonRef} type="button">
+                    {photoFile ? "Retake photo" : editingClimb?.photo_url ? "Replace photo" : "Take photo"}
+                  </button>
+                  <button className="secondary-button photo-picker-button" onClick={() => photoInputRef.current?.click()} type="button">
+                    Choose file
+                  </button>
+                </div>
+                <input
+                  id="photo-upload"
+                  ref={photoInputRef}
+                  accept="image/*"
+                  type="file"
+                  onChange={handlePhotoChange}
+                  className="hidden-file-input"
+                />
+                <input
+                  ref={cameraCaptureInputRef}
+                  accept="image/*"
+                  capture="environment"
+                  type="file"
+                  onChange={handlePhotoChange}
+                  className="hidden-file-input"
+                />
+                <small className="muted">
+                  {photoFile
+                    ? `${photoFile.name} ready to upload.`
+                    : editingClimb?.photo_url
+                      ? "Leave this alone to keep the current photo."
+                      : ""}
+                </small>
+              </label>
 
-                <label className="field">
-                  <span>Status</span>
-                  <select
-                    value={form.status}
-                    onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as ClimbRow["status"] }))}
-                  >
-                    <option value="attempted">Attempted</option>
-                    <option value="completed">Completed</option>
-                  </select>
-                </label>
+              <label className="field">
+                <span>Grade</span>
+                <select
+                  value={form.grade}
+                  onChange={(event) => setForm((current) => ({ ...current, grade: event.target.value as ClimbRow["grade"] }))}
+                >
+                  {CLIMB_GRADES.map((grade) => (
+                    <option key={grade} value={grade}>
+                      {grade}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="field">
+                <span>Grade modifier</span>
+                <div className="modifier-row" role="group" aria-label="Grade modifier">
+                  {(["-", "+"] as const).map((modifier) => (
+                    <button
+                      className={clsx("modifier-button", form.gradeModifier === modifier && "selected")}
+                      key={modifier}
+                      onClick={() =>
+                        setForm((current) => ({
+                          ...current,
+                          gradeModifier: current.gradeModifier === modifier ? null : modifier
+                        }))
+                      }
+                      type="button"
+                    >
+                      {modifier}
+                    </button>
+                  ))}
+                </div>
               </div>
+
+              <label className="check-row" htmlFor="flash-toggle">
+                <div>
+                  <span className="check-row-label">Flash</span>
+                  <p className="muted check-row-copy">Completed first try for 1.35x XP.</p>
+                </div>
+                <input
+                  checked={form.flashed}
+                  id="flash-toggle"
+                  onChange={(event) => setForm((current) => ({ ...current, flashed: event.target.checked }))}
+                  type="checkbox"
+                />
+              </label>
 
               <label className="field">
                 <span>Description</span>
@@ -313,7 +593,7 @@ export default function HomePage() {
                 />
               </label>
 
-              <label className="field">
+              <label className="field field-compact">
                 <span>Date</span>
                 <input
                   type="date"
@@ -322,39 +602,38 @@ export default function HomePage() {
                 />
               </label>
 
-              <label className="field">
-                <span>Photo</span>
-                <input
-                  id="photo-upload"
-                  accept="image/*"
-                  type="file"
-                  onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)}
-                />
-              </label>
-
-              <div className="field">
-                <span>Style tags</span>
-                <div className="tag-grid">
-                  {STYLE_TAGS.map((tag) => {
-                    const selected = form.styleTags.includes(tag);
-                    return (
-                      <button
-                        className={clsx("tag-button", selected && "selected")}
-                        key={tag}
-                        onClick={() =>
-                          setForm((current) => ({
-                            ...current,
-                            styleTags: toggleStyleTag(current.styleTags, tag)
-                          }))
-                        }
-                        type="button"
-                      >
-                        {tag}
-                      </button>
-                    );
-                  })}
+              <section className="tag-section">
+                <div className="tag-section-header">
+                  <p className="eyebrow">Style tags</p>
                 </div>
-              </div>
+                <div className="tag-groups">
+                  {STYLE_TAG_GROUPS.map((group) => (
+                    <div className="tag-group" key={group.label}>
+                      <p className="tag-group-label">{group.label}</p>
+                      <div className="tag-grid">
+                        {group.tags.map((tag) => {
+                          const selected = form.styleTags.includes(tag);
+                          return (
+                            <button
+                              className={clsx("tag-button", selected && "selected")}
+                              key={tag}
+                              onClick={() =>
+                                setForm((current) => ({
+                                  ...current,
+                                  styleTags: toggleStyleTag(current.styleTags, tag)
+                                }))
+                              }
+                              type="button"
+                            >
+                              {tag}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
 
               <label className="field">
                 <span>Notes</span>
@@ -366,115 +645,530 @@ export default function HomePage() {
                 />
               </label>
 
-              <button className="primary-button" disabled={loading || booting} type="submit">
-                {activeAction === "climb" ? "Saving climb..." : "Save climb"}
+              <button className="primary-button" disabled={!canSaveClimb} type="submit">
+                {activeAction === "edit" ? "Saving changes..." : activeAction === "climb" ? "Saving climb..." : editingClimb ? "Save changes" : "Save climb"}
               </button>
             </form>
           </section>
         </div>
+      ) : null}
 
-        <div className="stack">
-          <section className="panel">
-            <div className="section-title-row">
-              <div>
-                <p className="eyebrow">Stats</p>
-                <h2>Progress snapshot</h2>
-              </div>
-              <span className="badge xp-badge">{stats.xp} XP</span>
+      {!hasSupabaseConfig() ? (
+        <section className="panel onboarding-panel">
+          <div className="section-title-row">
+            <div>
+              <p className="eyebrow">Supabase</p>
+              <h1>Connect your account system</h1>
             </div>
-
-            <div className="stats-grid">
-              <article className="stat-card">
-                <span>Total climbs</span>
-                <strong>{stats.totalClimbs}</strong>
-              </article>
-              <article className="stat-card">
-                <span>Total completed</span>
-                <strong>{stats.totalCompleted}</strong>
-              </article>
-              <article className="stat-card">
-                <span>Favorite styles</span>
-                <strong>{stats.favoriteStylesText}</strong>
-              </article>
-              <article className="stat-card">
-                <span>Ready to move up?</span>
-                <strong>{recommendation}</strong>
-              </article>
+          </div>
+          <p className="muted helper-copy">Add your Supabase URL and anon key to `.env.local`, then restart the app.</p>
+          <div className="inline-note">This account-backed version needs `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` before it can load.</div>
+        </section>
+      ) : !activeProfile ? (
+        <section className="panel onboarding-panel">
+          <div className="section-title-row">
+            <div>
+              <p className="eyebrow">Welcome</p>
+              <h1>{authMode === "signup" ? "Create your account" : "Sign in"}</h1>
             </div>
+          </div>
+          <p className="muted helper-copy">Your climbs will be tied to your account, so they won’t be stuck on one device.</p>
+          <div className="auth-toggle-row">
+            <button className={clsx("filter-chip", authMode === "signup" && "active")} onClick={() => setAuthMode("signup")} type="button">
+              Sign up
+            </button>
+            <button className={clsx("filter-chip", authMode === "signin" && "active")} onClick={() => setAuthMode("signin")} type="button">
+              Sign in
+            </button>
+          </div>
+          <form className="stack-sm" onSubmit={handleAuthSubmit}>
+            {authMode === "signup" ? (
+              <label className="field">
+                <span>Display name</span>
+                <input
+                  type="text"
+                  placeholder="Example: Jaron"
+                  value={displayName}
+                  onChange={(event) => setDisplayName(event.target.value)}
+                />
+              </label>
+            ) : null}
+            <label className="field">
+              <span>Email</span>
+              <input
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </label>
+            <label className="field">
+              <span>Password</span>
+              <input
+                type="password"
+                placeholder="At least 6 characters"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </label>
+            <button className="primary-button" disabled={loading} type="submit">
+              {activeAction === "auth"
+                ? authMode === "signup"
+                  ? "Creating account..."
+                  : "Signing in..."
+                : authMode === "signup"
+                  ? "Create account"
+                  : "Sign in"}
+            </button>
+          </form>
+        </section>
+      ) : (
+        <>
+          <header className="app-header">
+            <button
+              aria-expanded={isMenuOpen}
+              className="menu-button"
+              onClick={() => setIsMenuOpen((current) => !current)}
+              type="button"
+            >
+              <span />
+              <span />
+              <span />
+            </button>
+            <div>
+              <p className="eyebrow">Climb Tracker</p>
+              <h2 className="app-header-title">
+                {activeView === "home" ? "Dashboard" : activeView === "account" ? "Account" : "Progress"}
+              </h2>
+            </div>
+          </header>
 
-            <div className="grade-breakdown">
-              <h3>Completed by grade</h3>
-              {CLIMB_GRADES.map((grade) => {
-                const count = stats.completedByGrade[grade] ?? 0;
-                const unlocked = hasGraduatedGrade(stats.completedByGrade, grade);
-                return (
-                  <div className="grade-row" key={grade}>
-                    <span>{grade}</span>
-                    <div className="grade-bar-track">
-                      <div className="grade-bar-fill" style={{ width: `${Math.min(count * 18, 100)}%` }} />
+          {isMenuOpen ? (
+            <div className="menu-overlay" onClick={() => setIsMenuOpen(false)}>
+              <nav className="menu-panel" onClick={(event) => event.stopPropagation()}>
+                <button className={clsx("menu-link", activeView === "home" && "active")} onClick={() => selectView("home")} type="button">
+                  Dashboard
+                </button>
+                <button className={clsx("menu-link", activeView === "progress" && "active")} onClick={() => selectView("progress")} type="button">
+                  Progress
+                </button>
+                <button className={clsx("menu-link", activeView === "account" && "active")} onClick={() => selectView("account")} type="button">
+                  Account
+                </button>
+              </nav>
+            </div>
+          ) : null}
+
+          {activeView === "home" ? (
+            <>
+              <section className="dashboard-top">
+                <section className={clsx("hero-card level-card", showSaveBurst && "save-burst")}>
+                  <div className="section-title-row compact-gap">
+                    <div>
+                      <p className="eyebrow">Current level</p>
+                      <h1 className="dashboard-level">{stats.level}</h1>
                     </div>
-                    <strong>{count}</strong>
-                    <span className={clsx("mini-badge", unlocked && "ready")}>{unlocked ? "solid" : "building"}</span>
+                    <div className="dashboard-meta">
+                      <span className="badge active">{activeProfile.display_name}</span>
+                      <span className="dashboard-xp-total">{stats.xp} XP total</span>
+                    </div>
                   </div>
-                );
-              })}
-            </div>
-          </section>
+                  <div className="xp-progress-block">
+                    <div className="xp-progress-labels">
+                      <span>{stats.xpThisLevel} / {stats.xpNextLevel} XP to next level</span>
+                      <span>{Math.round(stats.xpProgressPercent)}%</span>
+                    </div>
+                    <div aria-hidden="true" className="xp-progress-track">
+                      <div className="xp-progress-fill" style={{ width: `${stats.xpProgressPercent}%` }} />
+                    </div>
+                  </div>
+                  <div className="level-summary-grid">
+                    <article className="stat-card compact-stat-card">
+                      <span>Total sends</span>
+                      <strong>{stats.totalCompleted}</strong>
+                    </article>
+                    <article className="stat-card compact-stat-card">
+                      <span>Favorite style</span>
+                      <strong>{stats.favoriteStyles[0] ?? "Still learning"}</strong>
+                    </article>
+                    <article className="stat-card compact-stat-card level-summary-wide">
+                      <span>Personal best</span>
+                      <strong>{stats.personalBest}</strong>
+                    </article>
+                  </div>
+                </section>
+              </section>
 
-          <section className="panel">
-            <div className="section-title-row">
-              <div>
-                <p className="eyebrow">Feed</p>
-                <h2>{activeProfile ? `${activeProfile.display_name}'s climbs` : "Choose a profile"}</h2>
-              </div>
-              <span className="badge">{climbs.length} entries</span>
-            </div>
+              <section className="dashboard-grid">
+                <section className="panel progress-panel">
+                  <div className="section-title-row">
+                    <div>
+                      <p className="eyebrow">Progress</p>
+                      <h2>How it's going</h2>
+                    </div>
+                  </div>
 
-            {booting ? <p className="muted">Loading climbs...</p> : null}
-
-            <div className="feed">
-              {climbs.length === 0 ? (
-                <p className="muted">No climbs logged yet. Add one above or load the sample data.</p>
-              ) : (
-                climbs.map((climb) => (
-                  <article className="climb-card" key={climb.id}>
-                    {climb.photo_url ? (
-                      <img alt={`${climb.grade} climb`} className="climb-photo" src={climb.photo_url} />
-                    ) : (
-                      <div className="climb-photo placeholder">No photo</div>
-                    )}
-                    <div className="climb-content">
-                      <div className="section-title-row">
-                        <div>
-                          <h3>
-                            {climb.grade}
-                            {climb.wall_name ? ` / ${climb.wall_name}` : ""}
-                          </h3>
-                          <p className="muted">
-                            {prettyDate(climb.climbed_on)} / {climb.status}
-                          </p>
+                  <div className="grade-breakdown">
+                    {CLIMB_GRADES.map((grade) => {
+                      const count = stats.completedByGrade[grade] ?? 0;
+                      const fillPercent = maxGradeCount > 0 ? (count / maxGradeCount) * 100 : 0;
+                      return (
+                        <div className="grade-row" key={grade}>
+                          <span>{grade}</span>
+                          <div className="grade-bar-track">
+                            <div className="grade-bar-fill" style={{ width: `${fillPercent}%` }} />
+                          </div>
+                          <strong>{count}</strong>
                         </div>
-                        <span className={clsx("badge", climb.status === "completed" ? "completed" : "attempted")}>
-                          {climb.status}
-                        </span>
+                      );
+                    })}
+                  </div>
+                </section>
+
+                <section className="panel history-panel">
+                  <div className="section-title-row">
+                    <div>
+                      <p className="eyebrow">History</p>
+                      <h2>Recent climbs</h2>
+                    </div>
+                    <span className="badge">{filteredClimbs.length} shown</span>
+                  </div>
+
+                  <div className="history-toolbar">
+                    <div className="history-filter-header">
+                      <button
+                        className={clsx("filter-chip filter-chip-all", historyGradeFilter === "All" && "active")}
+                        onClick={() => setHistoryGradeFilter("All")}
+                        type="button"
+                      >
+                        All
+                      </button>
+                    </div>
+                    <div className="history-filter-row">
+                      {CLIMB_GRADES.map((grade) => (
+                        <button
+                          className={clsx("filter-chip", historyGradeFilter === grade && "active")}
+                          key={grade}
+                          onClick={() => setHistoryGradeFilter(grade)}
+                          type="button"
+                        >
+                          {grade}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="muted history-summary">
+                      {historyGradeFilter === "All"
+                        ? `Showing everything you have logged so far.`
+                        : `Showing your ${historyGradeFilter} climbs so you can quickly see repeats and notes.`}
+                    </p>
+                  </div>
+
+                  {booting ? <p className="muted">Loading climbs...</p> : null}
+
+                  <div className="feed history-feed">
+                    {recentClimbs.length === 0 ? (
+                      <p className="empty-copy">
+                        {historyGradeFilter === "All"
+                          ? "No climbs yet. Tap Add climb to log your first send."
+                          : `No ${historyGradeFilter} climbs yet. Pick another filter or add one.`}
+                      </p>
+                    ) : (
+                      recentClimbs.map((climb) => (
+                        <article className="climb-card" key={climb.id}>
+                          {climb.photo_url ? (
+                            <button className="thumbnail-button" onClick={() => setSelectedPhotoUrl(climb.photo_url)} type="button">
+                              <img alt={`${climb.grade} climb`} className="climb-photo" src={climb.photo_url} />
+                            </button>
+                          ) : null}
+                          <div className="climb-content">
+                            <div className="section-title-row">
+                              <div>
+                                <div className="history-title-row">
+                                  <h3>
+                                    {climb.grade}
+                                    {climb.grade_modifier ?? ""}
+                                  </h3>
+                                  {climb.wall_name ? <span className="history-description">{climb.wall_name}</span> : null}
+                                </div>
+                                <p className="muted history-meta">{prettyDate(climb.climbed_on)}</p>
+                              </div>
+                            </div>
+                            <div className="tag-row">
+                              {climb.flashed ? <span className="mini-badge ready">flash</span> : null}
+                              {climb.style_tags.map((tag) => (
+                                <span className="mini-badge" key={tag}>
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                            {climb.notes ? <p>{climb.notes}</p> : null}
+                            <div className="climb-actions">
+                              <p className="xp-line">+{climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null)} XP</p>
+                              <div className="climb-action-buttons">
+                                <button className="secondary-button climb-edit-button" disabled={loading} onClick={() => openEditor(climb)} type="button">
+                                  Edit climb
+                                </button>
+                                <button className="delete-button" disabled={loading} onClick={() => setClimbPendingDelete(climb)} type="button">
+                                  Delete climb
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </article>
+                      ))
+                    )}
+                  </div>
+                </section>
+              </section>
+
+              <button className="fab-button" onClick={openComposer} type="button">
+                Add climb
+              </button>
+            </>
+          ) : null}
+
+          {activeView === "account" ? (
+            <section className="account-grid">
+              <section className="panel">
+                <div className="section-title-row">
+                  <div>
+                    <p className="eyebrow">Account</p>
+                    <h2>Your settings</h2>
+                  </div>
+                </div>
+
+                <div className="account-summary">
+                  <div className="account-line">
+                    <span>Email</span>
+                    <strong>{currentUserEmail || "Signed in"}</strong>
+                  </div>
+                  <div className="account-line">
+                    <span>Climber name</span>
+                    <strong>{activeProfile.display_name}</strong>
+                  </div>
+                  <div className="account-line">
+                    <span>Total climbs</span>
+                    <strong>{climbs.length}</strong>
+                  </div>
+                </div>
+              </section>
+
+              <section className="panel">
+                <div className="section-title-row">
+                  <div>
+                    <p className="eyebrow">Profile</p>
+                    <h2>Change your name</h2>
+                  </div>
+                </div>
+                <form className="stack-sm" onSubmit={handleDisplayNameSave}>
+                  <label className="field">
+                    <span>Display name</span>
+                    <input
+                      type="text"
+                      value={accountDisplayName}
+                      onChange={(event) => setAccountDisplayName(event.target.value)}
+                    />
+                  </label>
+                  <button className="primary-button" disabled={loading} type="submit">
+                    {activeAction === "rename" ? "Saving..." : "Save name"}
+                  </button>
+                </form>
+              </section>
+
+              <section className="panel">
+                <div className="section-title-row">
+                  <div>
+                    <p className="eyebrow">Actions</p>
+                    <h2>Manage account</h2>
+                  </div>
+                </div>
+                <div className="account-actions">
+                  <button className="secondary-button" disabled={loading} onClick={() => void handleSignOut()} type="button">
+                    {activeAction === "logout" ? "Signing out..." : "Sign out"}
+                  </button>
+                  <button className="delete-button" disabled={loading} onClick={() => void handleAccountDelete()} type="button">
+                    {activeAction === "account-delete" ? "Deleting account..." : "Delete account"}
+                  </button>
+                </div>
+                <p className="muted">Deleting your account removes your profile, climbs, and sign-in from this app.</p>
+              </section>
+            </section>
+          ) : null}
+
+          {activeView === "progress" ? (
+            <section className="progress-view">
+              <section className="panel progress-hero">
+                <div className="section-title-row">
+                  <div>
+                    <p className="eyebrow">Progress</p>
+                    <h2>{progressStats.rangeLabel}</h2>
+                    <p className="muted progress-cadence">{progressStats.cadenceLabel}</p>
+                  </div>
+                </div>
+
+                <div className="range-chip-row" role="tablist" aria-label="Progress range">
+                  {PROGRESS_RANGES.map((range) => (
+                    <button
+                      className={clsx("range-chip", progressRange === range && "active")}
+                      key={range}
+                      onClick={() => setProgressRange(range)}
+                      type="button"
+                    >
+                      {range}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="progress-kpi-grid">
+                  <article className="stat-card">
+                    <span>Sends</span>
+                    <strong>{progressStats.sends}</strong>
+                  </article>
+                  <article className="stat-card">
+                    <span>XP earned</span>
+                    <strong>{progressStats.totalXp}</strong>
+                  </article>
+                  <article className="stat-card">
+                    <span>Weekly streak</span>
+                    <strong>{progressStats.weeklyStreak} wk</strong>
+                  </article>
+                  <article className="stat-card">
+                    <span>Consistency</span>
+                    <strong>{Math.round(progressStats.consistencyPercent)}%</strong>
+                  </article>
+                </div>
+              </section>
+
+              <section className="progress-grid">
+                <section className="panel">
+                  <div className="section-title-row">
+                    <div>
+                      <p className="eyebrow">Trend</p>
+                      <h2>Climbs over time</h2>
+                    </div>
+                    <span className={clsx("badge", "trend-badge", `trend-${progressStats.trendDirection}`)}>
+                      {progressStats.trendDirection === "up"
+                        ? "Up"
+                        : progressStats.trendDirection === "down"
+                          ? "Down"
+                          : "Steady"}
+                    </span>
+                  </div>
+
+                  <div className="trend-chart" aria-label="Climbing trend chart">
+                    <div className="trend-plot">
+                      <div className="trend-graph-shell">
+                        <div className="trend-y-axis" aria-hidden="true">
+                          {trendChart.yAxisMarks.map((mark) => (
+                            <span className="trend-y-label" key={mark}>
+                              {mark}
+                            </span>
+                          ))}
+                        </div>
+                        <svg aria-hidden="true" className="trend-svg" preserveAspectRatio="xMidYMid meet" viewBox={`0 0 100 ${trendChart.height + 4}`}>
+                        <defs>
+                          <linearGradient id="trendFill" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0%" stopColor="rgba(216, 111, 45, 0.34)" />
+                            <stop offset="100%" stopColor="rgba(216, 111, 45, 0.03)" />
+                          </linearGradient>
+                        </defs>
+                        {trendChart.areaPath ? <path className="trend-area" d={trendChart.areaPath} /> : null}
+                        {trendChart.linePath ? <path className="trend-line" d={trendChart.linePath} /> : null}
+                        {trendChart.points.map((point) => (
+                          <circle
+                            className="trend-point"
+                            cx={point.x}
+                            cy={point.y}
+                            key={point.bucket.key}
+                            r="1.9"
+                          />
+                        ))}
+                        </svg>
                       </div>
-                      <div className="tag-row">
-                        {climb.style_tags.map((tag) => (
-                          <span className="mini-badge" key={tag}>
-                            {tag}
+                      <div className="trend-label-row">
+                        {progressStats.buckets.map((bucket) => (
+                          <span className="trend-label" key={bucket.key} title={`${bucket.label}: ${bucket.climbCount} climbs`}>
+                            {bucket.shortLabel}
                           </span>
                         ))}
                       </div>
-                      {climb.notes ? <p>{climb.notes}</p> : null}
-                      {climb.status === "completed" ? <p className="xp-line">+{gradeToXp(climb.grade)} XP</p> : null}
                     </div>
-                  </article>
-                ))
-              )}
-            </div>
-          </section>
-        </div>
-      </section>
+                  </div>
+                </section>
+
+                <section className="panel">
+                  <div className="section-title-row">
+                    <div>
+                      <p className="eyebrow">Consistency</p>
+                      <h2>Show-up metrics</h2>
+                    </div>
+                  </div>
+
+                  <div className="progress-metric-list">
+                    <div className="progress-metric">
+                      <span>Active weeks</span>
+                      <strong>
+                        {progressStats.activeWeeks} / {progressStats.totalWeeks}
+                      </strong>
+                    </div>
+                    <div className="progress-metric">
+                      <span>Avg sends per active week</span>
+                      <strong>{progressStats.averagePerActiveWeek.toFixed(1)}</strong>
+                    </div>
+                    <div className="progress-metric">
+                      <span>Top grade</span>
+                      <strong>{progressStats.topGrade}</strong>
+                    </div>
+                    <div className="progress-metric">
+                      <span>Top styles</span>
+                      <strong>{progressStats.topStyles.length > 0 ? progressStats.topStyles.join(", ") : "Still learning"}</strong>
+                    </div>
+                  </div>
+                  <section className="flash-breakdown">
+                    <div className="flash-breakdown-header">
+                      <div>
+                        <p className="eyebrow">Flash breakdown</p>
+                        <h3>First-try sends by grade</h3>
+                      </div>
+                      <div className="flash-breakdown-summary">
+                        <span>Average flash grade</span>
+                        <strong>{progressStats.averageFlashGrade}</strong>
+                      </div>
+                    </div>
+                    <div className="flash-overview-row">
+                      <span>Overall flash rate</span>
+                      <strong>{progressStats.flashRatePercent}%</strong>
+                    </div>
+                    <div className="flash-grade-list">
+                      {progressStats.flashRateByGrade.map((item) => (
+                        <div className="flash-grade-row" key={item.grade}>
+                          <span>{item.grade}</span>
+                          <div
+                            aria-hidden="true"
+                            className={clsx("flash-grade-track", item.flashRatePercent === null && "is-empty")}
+                          >
+                            <div
+                              className="flash-grade-fill"
+                              style={{ width: `${item.flashRatePercent ?? 0}%` }}
+                            />
+                          </div>
+                          <strong className={clsx(item.flashRatePercent === null && "muted")}>
+                            {item.flashRatePercent === null ? "—" : `${item.flashRatePercent}%`}
+                          </strong>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                  <p className="muted progress-explainer">
+                    Consistency means the share of calendar weeks in this range where you logged at least one climb.
+                    {` ${progressStats.activeWeeks} of ${progressStats.totalWeeks} weeks were active.`}
+                  </p>
+                </section>
+              </section>
+            </section>
+          ) : null}
+        </>
+      )}
     </main>
   );
 }
@@ -485,7 +1179,7 @@ function getMessage(error: unknown) {
   }
 
   if (typeof error === "object" && error !== null) {
-    const maybeSupabaseError = error as {
+    const maybeError = error as {
       message?: string;
       details?: string;
       hint?: string;
@@ -493,10 +1187,10 @@ function getMessage(error: unknown) {
     };
 
     const parts = [
-      maybeSupabaseError.message,
-      maybeSupabaseError.details,
-      maybeSupabaseError.hint,
-      maybeSupabaseError.code ? `Code: ${maybeSupabaseError.code}` : ""
+      maybeError.message,
+      maybeError.details,
+      maybeError.hint,
+      maybeError.code ? `Code: ${maybeError.code}` : ""
     ].filter(Boolean);
 
     if (parts.length > 0) {
