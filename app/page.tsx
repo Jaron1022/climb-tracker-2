@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { CLIMB_GRADES, DEFAULT_FORM, STYLE_TAG_GROUPS, climbToXp } from "@/lib/xp";
 import { uploadPhoto } from "@/lib/local-store";
@@ -53,50 +53,7 @@ export default function HomePage() {
   const [historyGradeFilter, setHistoryGradeFilter] = useState<"All" | ClimbRow["grade"]>("All");
   const [progressRange, setProgressRange] = useState<ProgressRange>("3M");
 
-  useEffect(() => {
-    if (!hasSupabaseConfig()) {
-      setBooting(false);
-      return;
-    }
-
-    void initialize();
-
-    const unsubscribe = subscribeToAuthChanges((user) => {
-      setCurrentUserEmail(user?.email ?? "");
-      void syncUserData(user?.id ?? "");
-    });
-
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    if (!isComposerOpen) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      cameraButtonRef.current?.focus();
-    }, 120);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [isComposerOpen]);
-
-  async function initialize() {
-    try {
-      setBooting(true);
-      setActiveAction("load");
-      setError("");
-      const user = await getCurrentUser();
-      await syncUserData(user?.id ?? "");
-    } catch (err) {
-      setError(getMessage(err));
-    } finally {
-      setBooting(false);
-      setActiveAction("");
-    }
-  }
-
-  async function syncUserData(userId: string) {
+  const syncUserData = useCallback(async (userId: string) => {
     if (!userId) {
       setActiveProfile(null);
       setActiveProfileId("");
@@ -117,7 +74,50 @@ export default function HomePage() {
 
     const profileClimbs = await fetchClimbsForUser(userId);
     setClimbs(profileClimbs);
-  }
+  }, []);
+
+  useEffect(() => {
+    if (!hasSupabaseConfig()) {
+      setBooting(false);
+      return;
+    }
+
+    async function initialize() {
+      try {
+        setBooting(true);
+        setActiveAction("load");
+        setError("");
+        const user = await getCurrentUser();
+        await syncUserData(user?.id ?? "");
+      } catch (err) {
+        setError(getMessage(err));
+      } finally {
+        setBooting(false);
+        setActiveAction("");
+      }
+    }
+
+    void initialize();
+
+    const unsubscribe = subscribeToAuthChanges((user) => {
+      setCurrentUserEmail(user?.email ?? "");
+      void syncUserData(user?.id ?? "");
+    });
+
+    return unsubscribe;
+  }, [syncUserData]);
+
+  useEffect(() => {
+    if (!isComposerOpen) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      cameraButtonRef.current?.focus();
+    }, 120);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isComposerOpen]);
 
   async function handleAuthSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -804,7 +804,7 @@ export default function HomePage() {
                   <div className="section-title-row">
                     <div>
                       <p className="eyebrow">Progress</p>
-                      <h2>How it's going</h2>
+                      <h2>How it&apos;s going</h2>
                     </div>
                   </div>
 
