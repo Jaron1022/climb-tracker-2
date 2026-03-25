@@ -807,26 +807,46 @@ export default function HomePage() {
                 <section className="panel progress-panel">
                   <div className="section-title-row">
                     <div>
-                      <p className="eyebrow">Progress</p>
-                      <h2>How it&apos;s going</h2>
+                      <p className="eyebrow">Daily recap</p>
+                      <h2>{progressStats.dailyRecap?.headline ?? "No session logged yet"}</h2>
                     </div>
                   </div>
 
-                  <div className="grade-breakdown">
-                    {CLIMB_GRADES.map((grade) => {
-                      const count = stats.completedByGrade[grade] ?? 0;
-                      const fillPercent = maxGradeCount > 0 ? (count / maxGradeCount) * 100 : 0;
-                      return (
-                        <div className="grade-row" key={grade}>
-                          <span>{grade}</span>
-                          <div className="grade-bar-track">
-                            <div className="grade-bar-fill" style={{ width: `${fillPercent}%` }} />
+                  {progressStats.dailyRecap ? (
+                    <>
+                      <p className="muted daily-recap-subtitle dashboard-recap-subtitle">
+                        {progressStats.dailyRecap.isToday
+                          ? `Today • ${prettyDate(progressStats.dailyRecap.climbedOn)}`
+                          : `Last session • ${prettyDate(progressStats.dailyRecap.climbedOn)}`}
+                      </p>
+                      <div className="daily-recap-pill-row dashboard-recap-pills">
+                        <span className="daily-pill">{progressStats.dailyRecap.sends} sends</span>
+                        <span className="daily-pill">+{progressStats.dailyRecap.totalXp} XP</span>
+                        {progressStats.dailyRecap.topGrade ? <span className="daily-pill">Top send {progressStats.dailyRecap.topGrade}</span> : null}
+                      </div>
+                      <div className="daily-recap-list">
+                        {progressStats.dailyRecap.groups.map((group) => (
+                          <div className="daily-recap-row" key={group.label}>
+                            <div className="daily-recap-row-main">
+                              <div className="daily-recap-row-labels">
+                                <strong>{group.label}</strong>
+                                <span className="muted">
+                                  {group.count} climb{group.count > 1 ? "s" : ""}
+                                  {group.flashedCount > 0 ? ` • ${group.flashedCount} flash${group.flashedCount > 1 ? "es" : ""}` : ""}
+                                </span>
+                              </div>
+                              <div className="daily-recap-bar-track" aria-hidden="true">
+                                <div className="daily-recap-bar-fill" style={{ width: `${group.fillPercent}%` }} />
+                              </div>
+                            </div>
+                            <span className="daily-recap-xp">+{group.xp}</span>
                           </div>
-                          <strong>{count}</strong>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="empty-copy">Log a climb and your most recent session recap will show up here.</p>
+                  )}
                 </section>
 
                 <section className="panel history-panel">
@@ -1001,52 +1021,6 @@ export default function HomePage() {
 
           {activeView === "progress" ? (
             <section className="progress-view">
-              {progressStats.dailyRecap ? (
-              <section className="panel daily-recap-hero">
-                <div className="daily-recap-hero-copy">
-                  <div>
-                    <p className="eyebrow">Daily recap</p>
-                    <h2>{progressStats.dailyRecap.headline}</h2>
-                    <p className="daily-recap-date">{prettyDate(progressStats.dailyRecap.climbedOn)}</p>
-                    <p className="daily-recap-subtitle">{progressStats.dailyRecap.subheadline}</p>
-                  </div>
-                  <div className="daily-recap-score">
-                    <span>Session XP</span>
-                    <strong>+{progressStats.dailyRecap.totalXp}</strong>
-                  </div>
-                </div>
-
-                <div className="daily-recap-pill-row">
-                  <span className="daily-pill">{progressStats.dailyRecap.sends} sends</span>
-                  <span className="daily-pill">
-                    {progressStats.dailyRecap.flashedCount > 0 ? `${progressStats.dailyRecap.flashedCount} flash${progressStats.dailyRecap.flashedCount > 1 ? "es" : ""}` : "Built momentum"}
-                  </span>
-                  {progressStats.dailyRecap.topGrade ? <span className="daily-pill">Top send {progressStats.dailyRecap.topGrade}</span> : null}
-                  {progressStats.dailyRecap.topStyle ? <span className="daily-pill">{progressStats.dailyRecap.topStyle} day</span> : null}
-                </div>
-
-                <div className="daily-recap-list">
-                  {progressStats.dailyRecap.groups.map((group) => (
-                    <div className="daily-recap-row" key={group.label}>
-                      <div className="daily-recap-row-main">
-                        <div className="daily-recap-row-labels">
-                          <strong>{group.label}</strong>
-                          <span className="muted">
-                            {group.count} climb{group.count > 1 ? "s" : ""}
-                            {group.flashedCount > 0 ? ` • ${group.flashedCount} flash${group.flashedCount > 1 ? "es" : ""}` : ""}
-                          </span>
-                        </div>
-                        <div className="daily-recap-bar-track" aria-hidden="true">
-                          <div className="daily-recap-bar-fill" style={{ width: `${group.fillPercent}%` }} />
-                        </div>
-                      </div>
-                      <span className="daily-recap-xp">+{group.xp}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-              ) : null}
-
               <section className="panel progress-hero">
                 <div className="section-title-row">
                   <div>
@@ -1086,6 +1060,50 @@ export default function HomePage() {
                     <span>Consistency</span>
                     <strong>{Math.round(progressStats.consistencyPercent)}%</strong>
                   </article>
+                </div>
+              </section>
+
+              <section className="panel all-time-panel">
+                <div className="section-title-row">
+                  <div>
+                    <p className="eyebrow">All-time stats</p>
+                    <h2>Your full logbook</h2>
+                  </div>
+                </div>
+
+                <div className="progress-kpi-grid">
+                  <article className="stat-card">
+                    <span>Total sends</span>
+                    <strong>{stats.totalCompleted}</strong>
+                  </article>
+                  <article className="stat-card">
+                    <span>Total XP</span>
+                    <strong>{stats.xp}</strong>
+                  </article>
+                  <article className="stat-card">
+                    <span>Favorite style</span>
+                    <strong>{stats.favoriteStyles[0] ?? "Still learning"}</strong>
+                  </article>
+                  <article className="stat-card">
+                    <span>Personal best</span>
+                    <strong>{stats.personalBest}</strong>
+                  </article>
+                </div>
+
+                <div className="grade-breakdown">
+                  {CLIMB_GRADES.map((grade) => {
+                    const count = stats.completedByGrade[grade] ?? 0;
+                    const fillPercent = maxGradeCount > 0 ? (count / maxGradeCount) * 100 : 0;
+                    return (
+                      <div className="grade-row" key={grade}>
+                        <span>{grade}</span>
+                        <div className="grade-bar-track">
+                          <div className="grade-bar-fill" style={{ width: `${fillPercent}%` }} />
+                        </div>
+                        <strong>{count}</strong>
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
 

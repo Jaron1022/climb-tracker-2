@@ -438,10 +438,6 @@ function buildDailyRecap(climbs: ClimbRow[]) {
 
   const todayKey = new Date().toISOString().slice(0, 10);
   const mostRecentDate = climbs.reduce((latest, climb) => (climb.climbed_on > latest ? climb.climbed_on : latest), climbs[0].climbed_on);
-  if (mostRecentDate !== todayKey) {
-    return null;
-  }
-
   const dayClimbs = climbs
     .filter((climb) => climb.climbed_on === mostRecentDate)
     .slice()
@@ -459,6 +455,7 @@ function buildDailyRecap(climbs: ClimbRow[]) {
 
   return {
     climbedOn: mostRecentDate,
+    isToday: mostRecentDate === todayKey,
     totalXp,
     sends: dayClimbs.length,
     flashedCount,
