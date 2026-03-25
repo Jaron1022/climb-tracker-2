@@ -1013,77 +1013,58 @@ export default function HomePage() {
           {activeView === "progress" ? (
             <section className="progress-view">
               <section className="panel progress-hero">
-                <div className="section-title-row">
+                <div className="progress-hero-top">
                   <div>
                     <p className="eyebrow">{progressRange === "ALL" ? "All-time stats" : "Progress"}</p>
                     <h2>{progressStats.rangeLabel}</h2>
                     <p className="muted progress-cadence">{progressStats.cadenceLabel}</p>
+                    <div className="range-chip-row" role="tablist" aria-label="Progress range">
+                      {PROGRESS_RANGES.map((range) => (
+                        <button
+                          className={clsx("range-chip", progressRange === range && "active")}
+                          key={range}
+                          onClick={() => setProgressRange(range)}
+                          type="button"
+                        >
+                          {range}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="progress-kpi-grid progress-kpi-corner">
+                    <article className="stat-card">
+                      <span>{progressRange === "ALL" ? "Total sends" : "Sends"}</span>
+                      <strong>{progressStats.sends}</strong>
+                    </article>
+                    <article className="stat-card">
+                      <span>{progressRange === "ALL" ? "Total XP" : "XP earned"}</span>
+                      <strong>{progressStats.totalXp}</strong>
+                    </article>
+                    <article className="stat-card">
+                      <span>{progressRange === "ALL" ? "Favorite style" : "Weekly streak"}</span>
+                      <strong>
+                        {progressRange === "ALL"
+                          ? stats.favoriteStyles[0] ?? "Still learning"
+                          : `${progressStats.weeklyStreak} wk`}
+                      </strong>
+                    </article>
+                    <article className="stat-card">
+                      <span>{progressRange === "ALL" ? "Personal best" : "Consistency"}</span>
+                      <strong>
+                        {progressRange === "ALL"
+                          ? stats.personalBest
+                          : `${Math.round(progressStats.consistencyPercent)}%`}
+                      </strong>
+                    </article>
                   </div>
                 </div>
 
-                <div className="range-chip-row" role="tablist" aria-label="Progress range">
-                  {PROGRESS_RANGES.map((range) => (
-                    <button
-                      className={clsx("range-chip", progressRange === range && "active")}
-                      key={range}
-                      onClick={() => setProgressRange(range)}
-                      type="button"
-                    >
-                      {range}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="progress-kpi-grid">
-                  <article className="stat-card">
-                    <span>{progressRange === "ALL" ? "Total sends" : "Sends"}</span>
-                    <strong>{progressStats.sends}</strong>
-                  </article>
-                  <article className="stat-card">
-                    <span>{progressRange === "ALL" ? "Total XP" : "XP earned"}</span>
-                    <strong>{progressStats.totalXp}</strong>
-                  </article>
-                  <article className="stat-card">
-                    <span>{progressRange === "ALL" ? "Favorite style" : "Weekly streak"}</span>
-                    <strong>
-                      {progressRange === "ALL"
-                        ? stats.favoriteStyles[0] ?? "Still learning"
-                        : `${progressStats.weeklyStreak} wk`}
-                    </strong>
-                  </article>
-                  <article className="stat-card">
-                    <span>{progressRange === "ALL" ? "Personal best" : "Consistency"}</span>
-                    <strong>
-                      {progressRange === "ALL"
-                        ? stats.personalBest
-                        : `${Math.round(progressStats.consistencyPercent)}%`}
-                    </strong>
-                  </article>
-                </div>
-
-                <div className="grade-breakdown progress-grade-breakdown">
-                  {CLIMB_GRADES.map((grade) => {
-                    const count = selectedGradeCounts[grade] ?? 0;
-                    const fillPercent = selectedGradeMax > 0 ? (count / selectedGradeMax) * 100 : 0;
-                    return (
-                      <div className="grade-row" key={grade}>
-                        <span>{grade}</span>
-                        <div className="grade-bar-track">
-                          <div className="grade-bar-fill" style={{ width: `${fillPercent}%` }} />
-                        </div>
-                        <strong>{count}</strong>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-
-              <section className="progress-grid">
-                <section className="panel">
-                  <div className="section-title-row">
+                <div className="trend-inline-shell">
+                  <div className="section-title-row trend-inline-header">
                     <div>
                       <p className="eyebrow">Trend</p>
-                      <h2>Climbs over time</h2>
+                      <h3>Climbs over time</h3>
                     </div>
                     <span className={clsx("badge", "trend-badge", `trend-${progressStats.trendDirection}`)}>
                       {progressStats.trendDirection === "up"
@@ -1133,8 +1114,26 @@ export default function HomePage() {
                       </div>
                     </div>
                   </div>
-                </section>
+                </div>
 
+                <div className="grade-breakdown progress-grade-breakdown">
+                  {CLIMB_GRADES.map((grade) => {
+                    const count = selectedGradeCounts[grade] ?? 0;
+                    const fillPercent = selectedGradeMax > 0 ? (count / selectedGradeMax) * 100 : 0;
+                    return (
+                      <div className="grade-row" key={grade}>
+                        <span>{grade}</span>
+                        <div className="grade-bar-track">
+                          <div className="grade-bar-fill" style={{ width: `${fillPercent}%` }} />
+                        </div>
+                        <strong>{count}</strong>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section className="progress-grid">
                 <section className="panel">
                   <div className="section-title-row">
                     <div>
