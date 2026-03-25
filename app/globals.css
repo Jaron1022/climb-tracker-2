@@ -421,7 +421,7 @@ button {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  align-items: end;
+  align-items: flex-end;
 }
 
 .flash-breakdown-header h3 {
