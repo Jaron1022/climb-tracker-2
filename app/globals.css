@@ -380,14 +380,39 @@ button {
 }
 
 .daily-recap-row {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 1rem;
-  align-items: flex-start;
+  align-items: center;
   padding: 0.9rem 1rem;
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.76);
   border: 1px solid rgba(49, 39, 28, 0.08);
+}
+
+.daily-recap-row-main {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.daily-recap-row-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+
+.daily-recap-bar-track {
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(52, 41, 31, 0.08);
+}
+
+.daily-recap-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-soft), var(--accent));
 }
 
 .daily-recap-note {
@@ -1291,6 +1316,10 @@ button {
   .flash-breakdown-header {
     display: grid;
     align-items: start;
+  }
+
+  .daily-recap-row-labels {
+    display: grid;
   }
 
   .daily-recap-score,

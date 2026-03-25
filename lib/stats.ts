@@ -61,9 +61,7 @@ export function buildProgressStats(climbs: ClimbRow[], range: ProgressRange) {
   const completedClimbs = climbs.filter((climb) => climb.status === "completed");
   const filteredClimbs = filterClimbsByRange(completedClimbs, range);
   const buckets = buildProgressBuckets(filteredClimbs, range);
-  const rangeDailyRecap = buildDailyRecap(filteredClimbs);
-  const latestOverallRecap = buildDailyRecap(completedClimbs);
-  const dailyRecap = rangeDailyRecap ?? latestOverallRecap;
+  const dailyRecap = buildDailyRecap(completedClimbs);
   const activeWeeks = countUniqueWeeks(filteredClimbs);
   const totalWeeks = countCalendarWeeksInRange(range, filteredClimbs);
   const flashedClimbs = filteredClimbs.filter((climb) => climb.flashed);
@@ -104,7 +102,6 @@ export function buildProgressStats(climbs: ClimbRow[], range: ProgressRange) {
     cadenceLabel: cadenceLabelForRange(range),
     consistencyLabel: consistencyLabelForRange(range, totalWeeks),
     dailyRecap,
-    dailyRecapScope: rangeDailyRecap ? "range" : latestOverallRecap ? "overall" : "empty",
     filteredClimbs,
     sends: filteredClimbs.length,
     totalXp,
@@ -439,7 +436,12 @@ function buildDailyRecap(climbs: ClimbRow[]) {
     return null;
   }
 
+  const todayKey = new Date().toISOString().slice(0, 10);
   const mostRecentDate = climbs.reduce((latest, climb) => (climb.climbed_on > latest ? climb.climbed_on : latest), climbs[0].climbed_on);
+  if (mostRecentDate !== todayKey) {
+    return null;
+  }
+
   const dayClimbs = climbs
     .filter((climb) => climb.climbed_on === mostRecentDate)
     .slice()
@@ -452,6 +454,8 @@ function buildDailyRecap(climbs: ClimbRow[]) {
   const flashedCount = dayClimbs.filter((climb) => climb.flashed).length;
   const topClimb = dayClimbs[0];
   const topStyle = mostCommonTag(dayClimbs);
+  const groups = buildDailyRecapGroups(dayClimbs);
+  const maxGroupCount = Math.max(1, ...groups.map((group) => group.count));
 
   return {
     climbedOn: mostRecentDate,
@@ -462,12 +466,70 @@ function buildDailyRecap(climbs: ClimbRow[]) {
     topStyle,
     headline: buildDailyRecapHeadline(dayClimbs.length, totalXp, flashedCount),
     subheadline: buildDailyRecapSubheadline(dayClimbs.length, topClimb ? `${topClimb.grade}${topClimb.grade_modifier ?? ""}` : null),
-    climbs: dayClimbs.map((climb) => ({
-      id: climb.id,
-      label: `${climb.grade}${climb.grade_modifier ?? ""}${climb.flashed ? " flash" : ""}`,
-      xp: climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null),
-      note: climb.wall_name ?? climb.notes ?? ""
+    groups: groups.map((group) => ({
+      ...group,
+      fillPercent: (group.count / maxGroupCount) * 100
     }))
+  };
+}
+
+function buildDailyRecapGroups(climbs: ClimbRow[]) {
+  const groups = new Map<string, { label: string; count: number; xp: number; flashedCount: number }>();
+
+  climbs.forEach((climb) => {
+    const label = `${climb.grade}${climb.grade_modifier ?? ""}`;
+    const current = groups.get(label) ?? {
+      label,
+      count: 0,
+      xp: 0,
+      flashedCount: 0
+    };
+
+    current.count += 1;
+    current.xp += climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null);
+    current.flashedCount += Number(Boolean(climb.flashed));
+    groups.set(label, current);
+  });
+
+  return Array.from(groups.values()).sort((left, right) => {
+    if (right.count !== left.count) {
+      return right.count - left.count;
+    }
+
+    return compareGradeLabel(right.label, left.label);
+  });
+}
+
+function compareGradeLabel(left: string, right: string) {
+  const leftParsed = parseGradeLabel(left);
+  const rightParsed = parseGradeLabel(right);
+  const gradeDelta = CLIMB_GRADES.indexOf(leftParsed.grade) - CLIMB_GRADES.indexOf(rightParsed.grade);
+
+  if (gradeDelta !== 0) {
+    return gradeDelta;
+  }
+
+  return modifierRank(leftParsed.modifier) - modifierRank(rightParsed.modifier);
+}
+
+function parseGradeLabel(label: string) {
+  if (label.endsWith("+")) {
+    return {
+      grade: label.slice(0, -1) as Grade,
+      modifier: "+" as GradeModifier
+    };
+  }
+
+  if (label.endsWith("-")) {
+    return {
+      grade: label.slice(0, -1) as Grade,
+      modifier: "-" as GradeModifier
+    };
+  }
+
+  return {
+    grade: label as Grade,
+    modifier: null as GradeModifier
   };
 }
 
