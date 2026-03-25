@@ -43,6 +43,11 @@ export async function signUpWithEmail(email: string, password: string, displayNa
     throw error;
   }
 
+  const identityCount = Array.isArray(data.user?.identities) ? data.user.identities.length : 0;
+  if (data.user && identityCount === 0) {
+    throw new Error("This email already has an account. Sign in instead.");
+  }
+
   return data.user;
 }
 

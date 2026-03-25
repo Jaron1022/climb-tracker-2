@@ -180,7 +180,11 @@ export default function HomePage() {
       await syncUserData("");
       setSuccess("Signed out.");
     } catch (err) {
-      setError(getMessage(err));
+      const message = getMessage(err);
+      setError(message);
+      if (message.includes("already has an account")) {
+        setAuthMode("signin");
+      }
     } finally {
       setLoading(false);
       setActiveAction("");
