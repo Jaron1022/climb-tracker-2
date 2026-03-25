@@ -61,7 +61,9 @@ export function buildProgressStats(climbs: ClimbRow[], range: ProgressRange) {
   const completedClimbs = climbs.filter((climb) => climb.status === "completed");
   const filteredClimbs = filterClimbsByRange(completedClimbs, range);
   const buckets = buildProgressBuckets(filteredClimbs, range);
-  const dailyRecap = buildDailyRecap(filteredClimbs);
+  const rangeDailyRecap = buildDailyRecap(filteredClimbs);
+  const latestOverallRecap = buildDailyRecap(completedClimbs);
+  const dailyRecap = rangeDailyRecap ?? latestOverallRecap;
   const activeWeeks = countUniqueWeeks(filteredClimbs);
   const totalWeeks = countCalendarWeeksInRange(range, filteredClimbs);
   const flashedClimbs = filteredClimbs.filter((climb) => climb.flashed);
@@ -102,6 +104,7 @@ export function buildProgressStats(climbs: ClimbRow[], range: ProgressRange) {
     cadenceLabel: cadenceLabelForRange(range),
     consistencyLabel: consistencyLabelForRange(range, totalWeeks),
     dailyRecap,
+    dailyRecapScope: rangeDailyRecap ? "range" : latestOverallRecap ? "overall" : "empty",
     filteredClimbs,
     sends: filteredClimbs.length,
     totalXp,

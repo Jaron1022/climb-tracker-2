@@ -313,7 +313,8 @@ button {
 
 .daily-recap-summary span,
 .daily-recap-note,
-.daily-recap-empty {
+.daily-recap-empty,
+.daily-recap-subtitle {
   color: var(--muted);
 }
 
@@ -343,6 +344,12 @@ button {
 .daily-recap-note {
   margin: 0.18rem 0 0;
   font-size: 0.9rem;
+}
+
+.daily-recap-subtitle {
+  margin: 0.3rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.4;
 }
 
 .daily-recap-xp {

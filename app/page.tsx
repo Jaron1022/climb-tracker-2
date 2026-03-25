@@ -1032,6 +1032,13 @@ export default function HomePage() {
                           ? prettyDate(progressStats.dailyRecap.climbedOn)
                           : "No climbs in this range yet"}
                       </h3>
+                      {progressStats.dailyRecap ? (
+                        <p className="muted daily-recap-subtitle">
+                          {progressStats.dailyRecapScope === "range"
+                            ? "Most recent climbing day in this selected range."
+                            : "No climbs in this selected range yet, so this is your latest climbing day overall."}
+                        </p>
+                      ) : null}
                     </div>
                     {progressStats.dailyRecap ? (
                       <div className="daily-recap-summary">
