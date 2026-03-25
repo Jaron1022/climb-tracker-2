@@ -1023,6 +1023,41 @@ export default function HomePage() {
                   ))}
                 </div>
 
+                <section className="daily-recap-card">
+                  <div className="section-title-row daily-recap-header">
+                    <div>
+                      <p className="eyebrow">Daily recap</p>
+                      <h3>
+                        {progressStats.dailyRecap
+                          ? prettyDate(progressStats.dailyRecap.climbedOn)
+                          : "No climbs in this range yet"}
+                      </h3>
+                    </div>
+                    {progressStats.dailyRecap ? (
+                      <div className="daily-recap-summary">
+                        <span>{progressStats.dailyRecap.sends} climbs</span>
+                        <strong>+{progressStats.dailyRecap.totalXp} XP</strong>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {progressStats.dailyRecap ? (
+                    <div className="daily-recap-list">
+                      {progressStats.dailyRecap.climbs.map((climb) => (
+                        <div className="daily-recap-row" key={climb.id}>
+                          <div>
+                            <strong>{climb.label}</strong>
+                            {climb.note ? <p className="muted daily-recap-note">{climb.note}</p> : null}
+                          </div>
+                          <span className="daily-recap-xp">+{climb.xp}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="muted daily-recap-empty">Log a climb in this date range and your recap will show up here.</p>
+                  )}
+                </section>
+
                 <div className="progress-kpi-grid">
                   <article className="stat-card">
                     <span>Sends</span>

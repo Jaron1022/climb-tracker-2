@@ -61,6 +61,7 @@ export function buildProgressStats(climbs: ClimbRow[], range: ProgressRange) {
   const completedClimbs = climbs.filter((climb) => climb.status === "completed");
   const filteredClimbs = filterClimbsByRange(completedClimbs, range);
   const buckets = buildProgressBuckets(filteredClimbs, range);
+  const dailyRecap = buildDailyRecap(filteredClimbs);
   const activeWeeks = countUniqueWeeks(filteredClimbs);
   const totalWeeks = countCalendarWeeksInRange(range, filteredClimbs);
   const flashedClimbs = filteredClimbs.filter((climb) => climb.flashed);
@@ -100,6 +101,7 @@ export function buildProgressStats(climbs: ClimbRow[], range: ProgressRange) {
     rangeLabel: rangeToLabel(range),
     cadenceLabel: cadenceLabelForRange(range),
     consistencyLabel: consistencyLabelForRange(range, totalWeeks),
+    dailyRecap,
     filteredClimbs,
     sends: filteredClimbs.length,
     totalXp,
@@ -427,6 +429,35 @@ function modifierRank(modifier: GradeModifier) {
 function formatPersonalBest(climb: ClimbRow) {
   const flashText = climb.flashed ? " flash" : "";
   return `${climb.grade}${climb.grade_modifier ?? ""}${flashText}`;
+}
+
+function buildDailyRecap(climbs: ClimbRow[]) {
+  if (climbs.length === 0) {
+    return null;
+  }
+
+  const mostRecentDate = climbs.reduce((latest, climb) => (climb.climbed_on > latest ? climb.climbed_on : latest), climbs[0].climbed_on);
+  const dayClimbs = climbs
+    .filter((climb) => climb.climbed_on === mostRecentDate)
+    .slice()
+    .sort((left, right) => compareClimbsForBest(right, left));
+
+  const totalXp = dayClimbs.reduce(
+    (total, climb) => total + climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null),
+    0
+  );
+
+  return {
+    climbedOn: mostRecentDate,
+    totalXp,
+    sends: dayClimbs.length,
+    climbs: dayClimbs.map((climb) => ({
+      id: climb.id,
+      label: `${climb.grade}${climb.grade_modifier ?? ""}${climb.flashed ? " flash" : ""}`,
+      xp: climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null),
+      note: climb.wall_name ?? climb.notes ?? ""
+    }))
+  };
 }
 
 function formatAverageFlashGrade(climbs: ClimbRow[]) {
