@@ -482,7 +482,7 @@ function buildDailyRecapGroups(climbs: ClimbRow[]) {
   const groups = new Map<string, { label: string; count: number; xp: number; flashedCount: number }>();
 
   climbs.forEach((climb) => {
-    const label = `${climb.grade}${climb.grade_modifier ?? ""}`;
+    const label = climb.grade;
     const current = groups.get(label) ?? {
       label,
       count: 0,
