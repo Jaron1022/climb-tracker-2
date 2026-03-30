@@ -457,6 +457,11 @@ export default function HomePage() {
     });
   }
 
+  function clearHistoryFilters() {
+    setHistoryGradeFilter("All");
+    setHistoryTagQuery("");
+  }
+
   function renderHistorySection({
     eyebrow,
     title,
@@ -491,6 +496,11 @@ export default function HomePage() {
             >
               All
             </button>
+            {historyGradeFilter !== "All" || historyTagQuery.trim() ? (
+              <button className="history-clear-button" onClick={clearHistoryFilters} type="button">
+                × Clear
+              </button>
+            ) : null}
           </div>
           <div className="history-filter-row">
             {CLIMB_GRADES.map((grade) => (
