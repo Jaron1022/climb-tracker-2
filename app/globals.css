@@ -8,9 +8,9 @@
   --text: #1e1b18;
   --muted: #6e6459;
   --line: rgba(49, 39, 28, 0.12);
-  --accent: #d86f2d;
-  --accent-deep: #8a3f17;
-  --accent-soft: #f2bf88;
+  --accent: #8db9ff;
+  --accent-deep: #355f9a;
+  --accent-soft: rgba(141, 185, 255, 0.24);
   --success: #206247;
   --shadow: 0 18px 44px rgba(40, 27, 16, 0.12);
   --shadow-strong: 0 22px 60px rgba(40, 27, 16, 0.18);
@@ -27,9 +27,9 @@
     --text: #f2ede7;
     --muted: #b5aca2;
     --line: rgba(245, 235, 225, 0.1);
-    --accent: #f08c4e;
-    --accent-deep: #ffd0af;
-    --accent-soft: rgba(240, 140, 78, 0.24);
+    --accent: #9cc6ff;
+    --accent-deep: #dbe9ff;
+    --accent-soft: rgba(156, 198, 255, 0.2);
     --success: #6fd3a1;
     --shadow: 0 20px 54px rgba(0, 0, 0, 0.34);
     --shadow-strong: 0 24px 64px rgba(0, 0, 0, 0.44);
@@ -50,9 +50,9 @@ body {
   font-family: Georgia, "Times New Roman", serif;
   color: var(--text);
   background:
-    radial-gradient(circle at top, rgba(255, 179, 94, 0.34), transparent 28%),
-    radial-gradient(circle at bottom right, rgba(216, 111, 45, 0.1), transparent 26%),
-    linear-gradient(180deg, #eadcc7 0%, #f4ede4 46%, #e9e0d3 100%);
+    radial-gradient(circle at top, rgba(141, 185, 255, 0.34), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(103, 145, 214, 0.12), transparent 26%),
+    linear-gradient(180deg, #e2ebf8 0%, #eef3fb 46%, #dfe8f5 100%);
   transition: background 200ms ease, color 200ms ease;
 }
 
@@ -286,7 +286,7 @@ button {
 
 .filter-chip.active {
   background: var(--accent-soft);
-  border-color: rgba(216, 111, 45, 0.28);
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
   color: var(--accent-deep);
 }
 
@@ -299,7 +299,7 @@ button {
 }
 
 .history-search-field input {
-  background: rgba(255, 252, 247, 0.92);
+  background: var(--surface-control-strong);
 }
 
 .history-view {
@@ -340,12 +340,12 @@ button {
   border: 0;
   border-radius: 999px;
   padding: 0.55rem 0.8rem;
-  background: rgba(255, 255, 255, 0.82);
+  background: var(--surface-control);
   color: var(--muted);
 }
 
 .range-chip.active {
-  background: rgba(216, 111, 45, 0.18);
+  background: var(--accent-soft);
   color: var(--accent-deep);
 }
 
@@ -404,8 +404,8 @@ button {
   overflow: hidden;
   background:
     radial-gradient(circle at top right, rgba(242, 191, 136, 0.45), transparent 30%),
-    radial-gradient(circle at bottom left, rgba(216, 111, 45, 0.16), transparent 38%),
-    linear-gradient(180deg, rgba(255, 250, 242, 0.96), rgba(255, 243, 229, 0.98));
+    radial-gradient(circle at bottom left, rgba(141, 185, 255, 0.18), transparent 38%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-control-strong) 86%, white), var(--surface-strong));
 }
 
 .daily-recap-hero::after {
@@ -451,8 +451,8 @@ button {
   gap: 0.3rem;
   padding: 0.95rem 1rem;
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.76);
-  border: 1px solid rgba(138, 63, 23, 0.12);
+  background: var(--surface-control);
+  border: 1px solid var(--line);
 }
 
 .daily-recap-score strong {
@@ -474,8 +474,8 @@ button {
 .daily-pill {
   padding: 0.55rem 0.85rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.84);
-  border: 1px solid rgba(138, 63, 23, 0.12);
+  background: var(--surface-control-strong);
+  border: 1px solid var(--line);
   color: var(--accent-deep);
   font-family: "Trebuchet MS", "Gill Sans", sans-serif;
 }
@@ -494,8 +494,8 @@ button {
   align-items: center;
   padding: 0.9rem 1rem;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.76);
-  border: 1px solid rgba(49, 39, 28, 0.08);
+  background: var(--surface-control);
+  border: 1px solid var(--line);
 }
 
 .daily-recap-row-main {
@@ -625,7 +625,7 @@ button {
 }
 
 .trend-badge.trend-steady {
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--surface-control);
 }
 
 .progress-metric-list {
@@ -661,7 +661,7 @@ button {
   padding: 1rem;
   border: 1px solid var(--line);
   border-radius: 24px;
-  background: rgba(255, 250, 242, 0.68);
+  background: var(--surface);
   display: grid;
   gap: 0.9rem;
 }
@@ -753,7 +753,7 @@ button {
 .flash-grade-fill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(216, 111, 45, 0.45), var(--accent));
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 48%, white), var(--accent));
 }
 
 .flash-grade-row {
@@ -831,7 +831,7 @@ button {
 .camera-button {
   border: 0;
   border-radius: 999px;
-  background: linear-gradient(180deg, var(--accent) 0%, #b84f18 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, white), color-mix(in srgb, var(--accent) 70%, #315f9c));
   color: white;
   padding: 0.7rem 1rem;
   font-family: "Trebuchet MS", "Gill Sans", sans-serif;
@@ -902,7 +902,7 @@ button {
   padding: 0.9rem 1rem;
   border: 1px solid var(--line);
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--surface-control);
 }
 
 .check-row-label {
@@ -941,7 +941,7 @@ button {
 
 .modifier-button.selected {
   background: var(--accent-soft);
-  border-color: rgba(216, 111, 45, 0.28);
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
   color: var(--accent-deep);
 }
 
@@ -974,10 +974,10 @@ button {
 
 .primary-button {
   padding: 0.9rem 1.1rem;
-  background: linear-gradient(180deg, var(--accent) 0%, #b84f18 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, white), color-mix(in srgb, var(--accent) 70%, #315f9c));
   color: white;
   font-family: "Trebuchet MS", "Gill Sans", sans-serif;
-  box-shadow: 0 10px 24px rgba(216, 111, 45, 0.24);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 .secondary-button {
@@ -1083,7 +1083,7 @@ button {
 .badge.completed,
 .mini-badge.ready {
   background: var(--accent-soft);
-  border-color: rgba(216, 111, 45, 0.28);
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
   color: var(--accent-deep);
 }
 
@@ -1370,9 +1370,9 @@ button {
 @media (prefers-color-scheme: dark) {
   body {
     background:
-      radial-gradient(circle at top, rgba(240, 140, 78, 0.22), transparent 24%),
-      radial-gradient(circle at bottom right, rgba(90, 56, 34, 0.34), transparent 28%),
-      linear-gradient(180deg, #0d1117 0%, #121821 45%, #0f141c 100%);
+      radial-gradient(circle at top, rgba(156, 198, 255, 0.22), transparent 24%),
+      radial-gradient(circle at bottom right, rgba(35, 57, 93, 0.34), transparent 28%),
+      linear-gradient(180deg, #0d1117 0%, #121923 45%, #0f151f 100%);
   }
 
   .menu-button,
@@ -1395,7 +1395,7 @@ button {
   }
 
   .primary-button {
-    box-shadow: 0 12px 28px rgba(240, 140, 78, 0.26);
+    box-shadow: 0 12px 28px rgba(156, 198, 255, 0.22);
   }
 
   .history-color-white {
@@ -1417,7 +1417,7 @@ button {
   border: 0;
   border-radius: 999px;
   padding: 0.7rem 0.95rem;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--surface-control-strong);
   color: var(--text);
 }
 
@@ -1448,7 +1448,7 @@ button {
 }
 
 .inline-note {
-  background: rgba(216, 111, 45, 0.08);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
   border-style: solid;
   color: var(--accent-deep);
 }
@@ -1470,7 +1470,7 @@ button {
   border: 0;
   border-radius: 999px;
   padding: 0.95rem 1.2rem;
-  background: linear-gradient(180deg, var(--accent) 0%, #b84f18 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, white), color-mix(in srgb, var(--accent) 70%, #315f9c));
   color: white;
   font-family: "Trebuchet MS", "Gill Sans", sans-serif;
   box-shadow: 0 18px 40px rgba(122, 65, 26, 0.28);
