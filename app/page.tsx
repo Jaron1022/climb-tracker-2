@@ -40,6 +40,7 @@ export default function HomePage() {
   const photoInputRef = useRef<HTMLInputElement | null>(null);
   const cameraCaptureInputRef = useRef<HTMLInputElement | null>(null);
   const cameraButtonRef = useRef<HTMLButtonElement | null>(null);
+  const historyTopRef = useRef<HTMLElement | null>(null);
   const [loading, setLoading] = useState(false);
   const [booting, setBooting] = useState(true);
   const [error, setError] = useState("");
@@ -51,6 +52,7 @@ export default function HomePage() {
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [showSaveBurst, setShowSaveBurst] = useState(false);
   const [historyGradeFilter, setHistoryGradeFilter] = useState<"All" | ClimbRow["grade"]>("All");
+  const [historyTagQuery, setHistoryTagQuery] = useState("");
   const [historyVisibleCount, setHistoryVisibleCount] = useState(20);
   const [progressRange, setProgressRange] = useState<ProgressRange>("ALL");
 
@@ -122,7 +124,7 @@ export default function HomePage() {
 
   useEffect(() => {
     setHistoryVisibleCount(20);
-  }, [historyGradeFilter]);
+  }, [historyGradeFilter, historyTagQuery]);
 
   async function handleAuthSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -390,8 +392,20 @@ export default function HomePage() {
     [stats.completedByGrade]
   );
   const filteredClimbs = useMemo(
-    () => climbs.filter((climb) => historyGradeFilter === "All" || climb.grade === historyGradeFilter),
-    [climbs, historyGradeFilter]
+    () => {
+      const normalizedQuery = historyTagQuery.trim().toLowerCase();
+
+      return climbs.filter((climb) => {
+        const matchesGrade = historyGradeFilter === "All" || climb.grade === historyGradeFilter;
+        const matchesTag =
+          normalizedQuery.length === 0 ||
+          climb.style_tags.some((tag) => tag.toLowerCase().includes(normalizedQuery)) ||
+          (normalizedQuery === "flash" && Boolean(climb.flashed));
+
+        return matchesGrade && matchesTag;
+      });
+    },
+    [climbs, historyGradeFilter, historyTagQuery]
   );
   const recentClimbs = filteredClimbs.slice(0, 8);
   const visibleHistoryClimbs = filteredClimbs.slice(0, historyVisibleCount);
@@ -432,6 +446,14 @@ export default function HomePage() {
   function selectView(view: "home" | "history" | "account" | "progress") {
     setActiveView(view);
     setIsMenuOpen(false);
+  }
+
+  function openHistoryView() {
+    selectView("history");
+
+    window.requestAnimationFrame(() => {
+      historyTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   function renderHistorySection({
@@ -482,10 +504,21 @@ export default function HomePage() {
             ))}
           </div>
           <p className="muted history-summary">
-            {historyGradeFilter === "All"
-              ? `Showing everything you have logged so far.`
-              : `Showing your ${historyGradeFilter} climbs so you can quickly see repeats and notes.`}
+            {historyTagQuery.trim()
+              ? `Filtered by tag search "${historyTagQuery.trim()}"${historyGradeFilter === "All" ? "" : ` and ${historyGradeFilter}`}.`
+              : historyGradeFilter === "All"
+                ? `Showing everything you have logged so far.`
+                : `Showing your ${historyGradeFilter} climbs so you can quickly see repeats and notes.`}
           </p>
+          <label className="field history-search-field">
+            <span>Search tags</span>
+            <input
+              placeholder="Try slab, flash, blue..."
+              type="search"
+              value={historyTagQuery}
+              onChange={(event) => setHistoryTagQuery(event.target.value)}
+            />
+          </label>
         </div>
 
         {booting ? <p className="muted">Loading climbs...</p> : null}
@@ -494,8 +527,12 @@ export default function HomePage() {
           {climbsToShow.length === 0 ? (
             <p className="empty-copy">
               {historyGradeFilter === "All"
-                ? "No climbs yet. Tap Add climb to log your first send."
-                : `No ${historyGradeFilter} climbs yet. Pick another filter or add one.`}
+                ? historyTagQuery.trim()
+                  ? `No climbs match "${historyTagQuery.trim()}". Try a different tag search.`
+                  : "No climbs yet. Tap Add climb to log your first send."
+                : historyTagQuery.trim()
+                  ? `No ${historyGradeFilter} climbs match "${historyTagQuery.trim()}".`
+                  : `No ${historyGradeFilter} climbs yet. Pick another filter or add one.`}
             </p>
           ) : (
             climbsToShow.map((climb) => (
@@ -547,7 +584,7 @@ export default function HomePage() {
         {showViewAll || showLoadMore ? (
           <div className="history-footer">
             {showViewAll ? (
-              <button className="secondary-button" onClick={() => selectView("history")} type="button">
+              <button className="secondary-button" onClick={openHistoryView} type="button">
                 View all history
               </button>
             ) : null}
@@ -751,9 +788,8 @@ export default function HomePage() {
                   <p className="eyebrow">Style tags</p>
                 </div>
                 <div className="tag-groups">
-                  {STYLE_TAG_GROUPS.map((group) => (
-                    <div className="tag-group" key={group.label}>
-                      <p className="tag-group-label">{group.label}</p>
+                  {STYLE_TAG_GROUPS.map((group) => {
+                    const groupBody = (
                       <div className="tag-grid">
                         {group.tags.map((tag) => {
                           const selected = form.styleTags.includes(tag);
@@ -774,8 +810,31 @@ export default function HomePage() {
                           );
                         })}
                       </div>
-                    </div>
-                  ))}
+                    );
+
+                    if (group.label === "Color") {
+                      return (
+                        <details className="tag-group tag-group-dropdown" key={group.label}>
+                          <summary className="tag-group-dropdown-summary">
+                            <span className="tag-group-label">{group.label}</span>
+                            <span className="tag-dropdown-meta">
+                              {group.tags.filter((tag) => form.styleTags.includes(tag)).length > 0
+                                ? `${group.tags.filter((tag) => form.styleTags.includes(tag)).length} selected`
+                                : "Optional"}
+                            </span>
+                          </summary>
+                          {groupBody}
+                        </details>
+                      );
+                    }
+
+                    return (
+                      <div className="tag-group" key={group.label}>
+                        <p className="tag-group-label">{group.label}</p>
+                        {groupBody}
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
 
@@ -1062,7 +1121,7 @@ export default function HomePage() {
           ) : null}
 
           {activeView === "history" ? (
-            <section className="history-view">
+            <section className="history-view" ref={historyTopRef}>
               {renderHistorySection({
                 eyebrow: "History",
                 title: "All climbs",

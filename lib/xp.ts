@@ -31,7 +31,16 @@ export const STYLE_TAGS = [
   "technical",
   "balancey",
   "compression",
-  "powerful"
+  "powerful",
+  "purple",
+  "black",
+  "white",
+  "yellow",
+  "red",
+  "blue",
+  "green",
+  "pink",
+  "orange"
 ] as const;
 
 export const STYLE_TAG_GROUPS = [
@@ -46,6 +55,10 @@ export const STYLE_TAG_GROUPS = [
   {
     label: "Movement",
     tags: ["static", "dynamic", "technical", "balancey", "compression", "powerful"] as const
+  },
+  {
+    label: "Color",
+    tags: ["purple", "black", "white", "yellow", "red", "blue", "green", "pink", "orange"] as const
   }
 ] as const;
 
