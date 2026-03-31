@@ -1133,10 +1133,6 @@ export default function HomePage() {
                         type="button"
                       >
                         {renderEmblemBadge(emblem.id, "large")}
-                        <span className="emblem-selected-remove" aria-hidden="true">
-                          ×
-                        </span>
-                        <span className="muted emblem-selected-hint">Tap to remove</span>
                       </button>
                     ) : (
                       <span className="muted">Empty</span>
