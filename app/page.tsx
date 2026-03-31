@@ -701,6 +701,10 @@ export default function HomePage() {
   const progressStats = useMemo(() => buildProgressStats(climbs, progressRange), [climbs, progressRange]);
   const unlockedEmblems = useMemo(() => getUnlockedEmblems(climbs), [climbs]);
   const unlockedEmblemIds = useMemo(() => unlockedEmblems.map((emblem) => emblem.id), [unlockedEmblems]);
+  const lockedEmblems = useMemo(
+    () => EMBLEM_DEFINITIONS.filter((emblem) => !unlockedEmblemIds.includes(emblem.id)),
+    [unlockedEmblemIds]
+  );
   const selectedEmblems = useMemo(
     () => normalizeSelectedEmblems(activeProfile?.selected_emblems ?? [], unlockedEmblemIds),
     [activeProfile?.selected_emblems, unlockedEmblemIds]
@@ -1101,7 +1105,11 @@ export default function HomePage() {
                 <p className="eyebrow">Select emblems</p>
                 <h2>Your badge loadout</h2>
               </div>
+              <button className="secondary-button emblem-picker-close" onClick={() => setIsEmblemPickerOpen(false)} type="button">
+                Close
+              </button>
             </div>
+            <p className="muted emblem-picker-copy">Choose up to 3 emblems to show on your profile. Unlocked emblems reflect your climbing milestones.</p>
             <div className="emblem-selected-row">
               {[0, 1, 2].map((slot) => {
                 const emblemId = selectedEmblemDraft[slot];
@@ -1114,31 +1122,55 @@ export default function HomePage() {
                 );
               })}
             </div>
-            <div className="emblem-grid">
-              {EMBLEM_DEFINITIONS.map((emblem) => {
-                const isUnlocked = unlockedEmblemIds.includes(emblem.id);
-                const isSelected = selectedEmblemDraft.includes(emblem.id);
+            <div className="emblem-picker-scroll">
+              <section className="emblem-section">
+                <div className="section-title-row">
+                  <div>
+                    <p className="eyebrow">Unlocked</p>
+                    <h3>Your earned emblems</h3>
+                  </div>
+                </div>
+                <div className="emblem-grid">
+                  {unlockedEmblems.map((emblem) => {
+                    const isSelected = selectedEmblemDraft.includes(emblem.id);
 
-                return (
-                  <button
-                    className={clsx("emblem-card", isSelected && "selected", !isUnlocked && "locked")}
-                    key={emblem.id}
-                    onClick={() => toggleEmblemSelection(emblem.id, isUnlocked)}
-                    type="button"
-                  >
-                    {renderEmblemBadge(emblem.id, "large")}
-                    <strong>{emblem.name}</strong>
-                    <span>{isUnlocked ? emblem.description : "Locked"}</span>
-                  </button>
-                );
-              })}
+                    return (
+                      <button
+                        className={clsx("emblem-card", isSelected && "selected")}
+                        key={emblem.id}
+                        onClick={() => toggleEmblemSelection(emblem.id, true)}
+                        type="button"
+                      >
+                        {renderEmblemBadge(emblem.id, "large")}
+                        <strong>{emblem.name}</strong>
+                        <span>{emblem.description}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section className="emblem-section">
+                <div className="section-title-row">
+                  <div>
+                    <p className="eyebrow">Locked</p>
+                    <h3>More to earn</h3>
+                  </div>
+                </div>
+                <div className="emblem-grid">
+                  {lockedEmblems.map((emblem) => (
+                    <div className={clsx("emblem-card", "locked")} key={emblem.id}>
+                      {renderEmblemBadge(emblem.id, "large")}
+                      <strong>{emblem.name}</strong>
+                      <span>{emblem.description}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
             </div>
-            <div className="confirm-actions">
+            <div className="confirm-actions emblem-picker-actions">
               <button className="secondary-button" onClick={() => setSelectedEmblemDraft([])} type="button">
                 Clear all
-              </button>
-              <button className="secondary-button" onClick={() => setIsEmblemPickerOpen(false)} type="button">
-                Cancel
               </button>
               <button className="primary-button" disabled={loading} onClick={() => void handleSaveEmblems()} type="button">
                 {activeAction === "emblems" ? "Saving..." : "Save emblems"}
@@ -2334,9 +2366,130 @@ function renderEmblemBadge(emblemId: string, size: "small" | "large") {
 
   return (
     <div className={clsx("emblem-badge", `emblem-tone-${emblem.tone}`, size === "small" ? "small" : "large")} key={`${emblem.id}-${size}`}>
-      <span>{emblem.mark}</span>
+      <div className="emblem-inner">{renderEmblemIcon(emblem.icon)}</div>
     </div>
   );
+}
+
+function renderEmblemIcon(icon: string) {
+  switch (icon) {
+    case "flag":
+      return (
+        <svg aria-hidden="true" className="emblem-icon" viewBox="0 0 24 24">
+          <path d="M7 20V5m0 0h10l-2 3 2 3H7" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+        </svg>
+      );
+    case "bolt":
+      return (
+        <svg aria-hidden="true" className="emblem-icon" viewBox="0 0 24 24">
+          <path d="m13 2-7 11h5l-1 9 8-12h-5l1-8Z" fill="currentColor" />
+        </svg>
+      );
+    case "stack":
+      return (
+        <svg aria-hidden="true" className="emblem-icon" viewBox="0 0 24 24">
+          <path d="m12 4 8 4-8 4-8-4 8-4Zm-8 8 8 4 8-4M4 16l8 4 8-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+        </svg>
+      );
+    case "crown":
+      return (
+        <svg aria-hidden="true" className="emblem-icon" viewBox="0 0 24 24">
+          <path d="m4 18 2-10 6 5 6-5 2 10H4Z" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+          <path d="M9 18h6" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+        </svg>
+      );
+    case "medal":
+      return (
+        <svg aria-hidden="true" className="emblem-icon" viewBox="0 0 24 24">
+          <path d="M9 3h6l-1 5h-4L9 3Z" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth="2" />
+          <circle cx="12" cy="15" r="5" fill="none" stroke="currentColor" strokeWidth="2" />
+        </svg>
+      );
+    case "peak":
+      return (
+        <svg aria-hidden="true" className="emblem-icon" viewBox="0 0 24 24">
+          <path d="m3 19 6-8 3 4 4-7 5 11H3Z" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+        </svg>
+      );
+    case "star":
+      return (
+        <svg aria-hidden="true" className="emblem-icon" viewBox="0 0 24 24">
+          <path d="m12 3 2.7 5.5 6.1.9-4.4 4.2 1 6-5.4-2.8-5.4 2.8 1-6L3.2 9.4l6.1-.9L12 3Z" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth="2" />
+        </svg>
+      );
+    case "shield":
+      return (
+        <svg aria-hidden="true" className="emblem-icon" viewBox="0 0 24 24">
+          <path d="M12 3 5 6v6c0 4.3 2.7 7.7 7 9 4.3-1.3 7-4.7 7-9V6l-7-3Z" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth="2" />
+        </svg>
+      );
+    case "triangle":
+      return (
+        <svg aria-hidden="true" className="emblem-icon" viewBox="0 0 24 24">
+          <path d="m12 5 7 13H5l7-13Z" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth="2" />
+        </svg>
+      );
+    case "roof":
+      return (
+        <svg aria-hidden="true" className="emblem-icon" viewBox="0 0 24 24">
+          <path d="M4 16h10l6-8H10L4 16Z" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth="2" />
+        </svg>
+      );
+    case "diamond":
+      return (
+        <svg aria-hidden="true" className="emblem-icon" viewBox="0 0 24 24">
+          <path d="m12 3 8 9-8 9-8-9 8-9Z" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth="2" />
+        </svg>
+      );
+    case "ring":
+      return (
+        <svg aria-hidden="true" className="emblem-icon" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" strokeWidth="2" />
+        </svg>
+      );
+    case "arrow-up":
+      return (
+        <svg aria-hidden="true" className="emblem-icon" viewBox="0 0 24 24">
+          <path d="M12 19V6m0 0-5 5m5-5 5 5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+        </svg>
+      );
+    case "comet":
+      return (
+        <svg aria-hidden="true" className="emblem-icon" viewBox="0 0 24 24">
+          <circle cx="15" cy="9" r="3" fill="currentColor" />
+          <path d="M5 19 12 12" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+          <path d="M8 20 4 20M6 16l-2 2" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+        </svg>
+      );
+    case "plus":
+      return (
+        <svg aria-hidden="true" className="emblem-icon" viewBox="0 0 24 24">
+          <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+        </svg>
+      );
+    case "spark":
+      return (
+        <svg aria-hidden="true" className="emblem-icon" viewBox="0 0 24 24">
+          <path d="m12 4 1.5 4.5L18 10l-4.5 1.5L12 16l-1.5-4.5L6 10l4.5-1.5L12 4Z" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth="2" />
+        </svg>
+      );
+    case "calendar":
+      return (
+        <svg aria-hidden="true" className="emblem-icon" viewBox="0 0 24 24">
+          <rect x="4" y="6" width="16" height="14" rx="2" fill="none" stroke="currentColor" strokeWidth="2" />
+          <path d="M8 3v6M16 3v6M4 10h16" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+        </svg>
+      );
+    case "compass":
+      return (
+        <svg aria-hidden="true" className="emblem-icon" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="2" />
+          <path d="m10 14 1-4 4-1-1 4-4 1Z" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth="2" />
+        </svg>
+      );
+    default:
+      return null;
+  }
 }
 
 function renderNavIcon(view: string) {
