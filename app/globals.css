@@ -394,6 +394,10 @@ button {
   padding-inline: 0.9rem;
 }
 
+.friend-demo-button {
+  white-space: nowrap;
+}
+
 .history-footer {
   display: flex;
   flex-wrap: wrap;

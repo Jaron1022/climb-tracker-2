@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { CLIMB_COLORS, CLIMB_GRADES, DEFAULT_FORM, STYLE_TAG_GROUPS, climbToXp } from "@/lib/xp";
 import { uploadPhoto } from "@/lib/local-store";
 import {
+  createDemoFriend,
   fetchFriendshipsForUser,
   fetchFriendFeed,
   fetchFriends,
@@ -604,6 +605,21 @@ export default function HomePage() {
       await removeFriendship(friendshipId);
       await refreshFriendsView();
       setSuccess("Friend removed.");
+    } catch (err) {
+      setError(getMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleCreateDemoFriend() {
+    try {
+      setLoading(true);
+      setError("");
+      setSuccess("");
+      const demoName = await createDemoFriend();
+      await refreshFriendsView();
+      setSuccess(`${demoName} is ready in your friend feed.`);
     } catch (err) {
       setError(getMessage(err));
     } finally {
@@ -1306,6 +1322,9 @@ export default function HomePage() {
                     <p className="eyebrow">Find climbers</p>
                     <h2>Add a friend</h2>
                   </div>
+                  <button className="secondary-button friend-demo-button" disabled={loading} onClick={() => void handleCreateDemoFriend()} type="button">
+                    Add demo friend
+                  </button>
                 </div>
                 <p className="muted friends-section-copy">Search by climber name, send a request, and start sharing sends with your circle.</p>
                 <label className="field">

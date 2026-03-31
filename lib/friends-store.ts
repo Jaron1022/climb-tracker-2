@@ -167,3 +167,30 @@ export async function fetchFriendFeed(userId: string) {
     friend_name: nameMap.get(climb.profile_id) ?? "Climber"
   })) as FriendFeedClimb[];
 }
+
+export async function createDemoFriend() {
+  const supabase = getSupabaseBrowserClient() as any;
+  const {
+    data: { session },
+    error: sessionError
+  } = await supabase.auth.getSession();
+
+  if (sessionError || !session?.access_token) {
+    throw new Error(sessionError?.message || "Auth session missing.");
+  }
+
+  const response = await fetch("/api/demo-friend", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${session.access_token}`
+    }
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as { error?: string; demoName?: string };
+
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not create the demo friend.");
+  }
+
+  return payload.demoName ?? "Demo Crusher";
+}
