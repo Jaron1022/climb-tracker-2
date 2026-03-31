@@ -1,5 +1,7 @@
 import type { ClimbForm, Grade, GradeModifier, StyleTag } from "./types";
 
+export const MAX_LEVEL = 100;
+
 export const CLIMB_GRADES = [
   "VB",
   "V0",
@@ -100,7 +102,7 @@ export function levelFromXp(xp: number) {
   let level = 1;
   let remainingXp = Math.max(0, xp);
 
-  while (remainingXp >= xpNeededForNextLevel(level)) {
+  while (level < MAX_LEVEL && remainingXp >= xpNeededForNextLevel(level)) {
     remainingXp -= xpNeededForNextLevel(level);
     level += 1;
   }
@@ -112,9 +114,13 @@ export function xpIntoCurrentLevel(xp: number) {
   let remainingXp = Math.max(0, xp);
   let level = 1;
 
-  while (remainingXp >= xpNeededForNextLevel(level)) {
+  while (level < MAX_LEVEL && remainingXp >= xpNeededForNextLevel(level)) {
     remainingXp -= xpNeededForNextLevel(level);
     level += 1;
+  }
+
+  if (level >= MAX_LEVEL) {
+    return 0;
   }
 
   return remainingXp;

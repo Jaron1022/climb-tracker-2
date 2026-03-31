@@ -1,4 +1,4 @@
-import { CLIMB_GRADES, climbToXp, levelFromXp, xpIntoCurrentLevel, xpNeededForNextLevel } from "./xp";
+import { CLIMB_GRADES, MAX_LEVEL, climbToXp, levelFromXp, xpIntoCurrentLevel, xpNeededForNextLevel } from "./xp";
 import type { ClimbRow, Grade, GradeModifier, StyleTag } from "./types";
 
 export const PROGRESS_RANGES = ["1W", "1M", "3M", "1Y", "ALL"] as const;
@@ -21,7 +21,7 @@ export function buildStats(climbs: ClimbRow[]) {
   );
   const level = levelFromXp(xp);
   const xpThisLevel = xpIntoCurrentLevel(xp);
-  const xpNextLevel = xpNeededForNextLevel(level);
+  const xpNextLevel = level >= MAX_LEVEL ? 0 : xpNeededForNextLevel(level);
 
   const completedByGrade = CLIMB_GRADES.reduce(
     (accumulator, grade) => {
@@ -53,7 +53,8 @@ export function buildStats(climbs: ClimbRow[]) {
     level,
     xpThisLevel,
     xpNextLevel,
-    xpProgressPercent: Math.min((xpThisLevel / xpNextLevel) * 100, 100)
+    xpProgressPercent: level >= MAX_LEVEL ? 100 : Math.min((xpThisLevel / xpNextLevel) * 100, 100),
+    isMaxLevel: level >= MAX_LEVEL
   };
 }
 

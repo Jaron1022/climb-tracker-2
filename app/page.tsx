@@ -1859,8 +1859,8 @@ export default function HomePage() {
                       </button>
                     </div>
                     <div className="xp-progress-labels">
-                      <span>{stats.xpThisLevel} / {stats.xpNextLevel} XP to next level</span>
-                      <span>{Math.round(stats.xpProgressPercent)}%</span>
+                      <span>{stats.isMaxLevel ? "Max level reached" : `${stats.xpThisLevel} / ${stats.xpNextLevel} XP to next level`}</span>
+                      <span>{stats.isMaxLevel ? "MAX" : `${Math.round(stats.xpProgressPercent)}%`}</span>
                     </div>
                     <div aria-hidden="true" className="xp-progress-track">
                       <div className="xp-progress-fill" style={{ width: `${stats.xpProgressPercent}%` }} />
