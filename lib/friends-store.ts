@@ -165,11 +165,11 @@ export async function fetchFriends(userId: string) {
         0
       );
       const friendStats = buildStats(friendClimbs);
+      const recentStats = buildStats(recentClimbs);
       const friendProfile = profilesById.get(friendId);
 
       const leaderboardBreakdown = getLeaderboardScoreBreakdown(
-        levelFromXp(friendXp),
-        friendStats.personalBest as Grade,
+        recentStats.personalBest as Grade,
         recentClimbs.length,
         new Set(recentClimbs.map((climb) => climb.climbed_on)).size
       );
@@ -185,6 +185,7 @@ export async function fetchFriends(userId: string) {
         level: levelFromXp(friendXp),
         totalSends: friendClimbs.length,
         personalBest: friendStats.personalBest as Grade,
+        hardestSend7: recentStats.personalBest as Grade,
         recentSends7: recentClimbs.length,
         activeDays7: new Set(recentClimbs.map((climb) => climb.climbed_on)).size,
         leaderboardScore: sumLeaderboardScoreBreakdown(leaderboardBreakdown),
@@ -222,30 +223,28 @@ export async function fetchFriendFeed(userId: string) {
   })) as FriendFeedClimb[];
 }
 
-export function buildLeaderboardScore(level: number, personalBest: Grade, recentSends30: number, activeDays30: number) {
-  return sumLeaderboardScoreBreakdown(getLeaderboardScoreBreakdown(level, personalBest, recentSends30, activeDays30));
+export function buildLeaderboardScore(hardestSend7: Grade, recentSends7: number, activeDays7: number) {
+  return sumLeaderboardScoreBreakdown(getLeaderboardScoreBreakdown(hardestSend7, recentSends7, activeDays7));
 }
 
-export function getLeaderboardScoreBreakdown(level: number, personalBest: Grade, recentSends30: number, activeDays30: number) {
-  const normalizedGrade = normalizeLeaderboardGrade(personalBest);
+export function getLeaderboardScoreBreakdown(hardestSend7: Grade, recentSends7: number, activeDays7: number) {
+  const normalizedGrade = normalizeLeaderboardGrade(hardestSend7);
   const gradeIndex = Math.max(0, CLIMB_GRADES.indexOf(normalizedGrade));
-  const cappedRecentSends = Math.min(recentSends30, 10);
-  const cappedActiveDays = Math.min(activeDays30, 7);
+  const cappedRecentSends = Math.max(0, recentSends7);
+  const cappedActiveDays = Math.min(Math.max(0, activeDays7), 4);
   return {
-    levelPoints: level * 8,
-    personalBestPoints: gradeIndex * 24,
-    recentSendsPoints: cappedRecentSends * 12,
-    activeDaysPoints: cappedActiveDays * 14
+    hardestSendPoints: getWeeklyHardestSendBonus(gradeIndex),
+    recentSendsPoints: cappedRecentSends * 10,
+    activeDaysPoints: cappedActiveDays * 15
   };
 }
 
 function sumLeaderboardScoreBreakdown(breakdown: {
-  levelPoints: number;
-  personalBestPoints: number;
+  hardestSendPoints: number;
   recentSendsPoints: number;
   activeDaysPoints: number;
 }) {
-  return breakdown.levelPoints + breakdown.personalBestPoints + breakdown.recentSendsPoints + breakdown.activeDaysPoints;
+  return breakdown.hardestSendPoints + breakdown.recentSendsPoints + breakdown.activeDaysPoints;
 }
 
 function getRecentClimbs(climbs: ClimbRow[], days: number) {
@@ -262,4 +261,9 @@ function getRecentClimbs(climbs: ClimbRow[], days: number) {
 
 function normalizeLeaderboardGrade(personalBest: Grade) {
   return (personalBest.match(/^VB|^V\d+/)?.[0] ?? "VB") as Grade;
+}
+
+function getWeeklyHardestSendBonus(gradeIndex: number) {
+  const bonuses = [0, 2, 5, 9, 14, 20, 28, 38, 50, 65, 83, 105];
+  return bonuses[Math.min(Math.max(0, gradeIndex), bonuses.length - 1)] ?? 0;
 }

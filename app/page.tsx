@@ -757,6 +757,7 @@ export default function HomePage() {
       return climbedOn >= threshold;
     });
     const activeDays7 = new Set(recentClimbs.map((climb) => climb.climbed_on)).size;
+    const weeklyStats = buildStats(recentClimbs);
     const selfEntry = activeProfile
       ? {
           id: activeProfile.id,
@@ -765,10 +766,11 @@ export default function HomePage() {
           selectedEmblems,
           level: stats.level,
           personalBest: stats.personalBest as Grade,
+          hardestSend7: weeklyStats.personalBest as Grade,
           recentSends7: recentClimbs.length,
           activeDays7,
-          score: buildLeaderboardScore(stats.level, stats.personalBest as Grade, recentClimbs.length, activeDays7),
-          breakdown: getLeaderboardScoreBreakdown(stats.level, stats.personalBest as Grade, recentClimbs.length, activeDays7),
+          score: buildLeaderboardScore(weeklyStats.personalBest as Grade, recentClimbs.length, activeDays7),
+          breakdown: getLeaderboardScoreBreakdown(weeklyStats.personalBest as Grade, recentClimbs.length, activeDays7),
           isYou: true
         }
       : null;
@@ -2061,7 +2063,7 @@ export default function HomePage() {
                                     {entry.isYou ? <span className="mini-badge ready">You</span> : null}
                                   </div>
                                   <p className="muted friend-row-meta">
-                                    Lv {entry.level} | PB {entry.personalBest} | {entry.recentSends7} sends in 7d
+                                    Lv {entry.level} | Best this week {entry.hardestSend7} | {entry.recentSends7} sends in 7d
                                   </p>
                                 </div>
                                 <div className="leaderboard-score">
@@ -2072,19 +2074,15 @@ export default function HomePage() {
                               {isExpanded ? (
                                 <div className="leaderboard-breakdown">
                                   <div className="leaderboard-breakdown-row">
-                                    <span>Level ({entry.level} x 8)</span>
-                                    <strong>{entry.breakdown.levelPoints}</strong>
+                                    <span>Hardest send this week ({entry.hardestSend7})</span>
+                                    <strong>{entry.breakdown.hardestSendPoints}</strong>
                                   </div>
                                   <div className="leaderboard-breakdown-row">
-                                    <span>Personal best ({entry.personalBest})</span>
-                                    <strong>{entry.breakdown.personalBestPoints}</strong>
-                                  </div>
-                                  <div className="leaderboard-breakdown-row">
-                                    <span>Recent sends (max 10 this week)</span>
+                                    <span>Sends this week</span>
                                     <strong>{entry.breakdown.recentSendsPoints}</strong>
                                   </div>
                                   <div className="leaderboard-breakdown-row">
-                                    <span>Active days (max 7 this week)</span>
+                                    <span>Active days (max 4 this week)</span>
                                     <strong>{entry.breakdown.activeDaysPoints}</strong>
                                   </div>
                                 </div>
