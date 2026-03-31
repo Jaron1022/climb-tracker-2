@@ -1548,8 +1548,8 @@ button {
   margin: 0;
   padding: 0.85rem 0.95rem;
   border-radius: 16px;
-  background: rgba(255, 248, 240, 0.88);
-  border: 1px dashed rgba(49, 39, 28, 0.18);
+  background: color-mix(in srgb, var(--surface-control) 92%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--line) 82%, transparent);
   color: var(--muted);
 }
 
