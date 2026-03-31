@@ -2065,9 +2065,6 @@ export default function HomePage() {
                                     <strong>{entry.name}</strong>
                                     {entry.isYou ? <span className="mini-badge ready">You</span> : null}
                                   </div>
-                                  <p className="muted friend-row-meta">
-                                    Lv {entry.level} | {entry.weeklyXp7} XP in 7d | {entry.recentSends7} sends
-                                  </p>
                                 </div>
                                 <div className="leaderboard-score">
                                   <strong>{entry.score}</strong>
