@@ -778,8 +778,15 @@ button {
 }
 
 .avatar-frame-tier-1 > .profile-avatar-accent::before {
-  inset: 0.14rem;
-  border: 1px solid color-mix(in srgb, var(--avatar-frame-highlight) 62%, transparent);
+  inset: 0.08rem;
+  background:
+    radial-gradient(circle at 50% 0.22rem, color-mix(in srgb, var(--avatar-frame-highlight) 90%, transparent) 0 0.12rem, transparent 0.14rem),
+    radial-gradient(circle at calc(100% - 0.22rem) 50%, color-mix(in srgb, var(--avatar-frame-highlight) 90%, transparent) 0 0.12rem, transparent 0.14rem),
+    radial-gradient(circle at 50% calc(100% - 0.22rem), color-mix(in srgb, var(--avatar-frame-highlight) 90%, transparent) 0 0.12rem, transparent 0.14rem),
+    radial-gradient(circle at 0.22rem 50%, color-mix(in srgb, var(--avatar-frame-highlight) 90%, transparent) 0 0.12rem, transparent 0.14rem);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--avatar-frame-highlight) 64%, transparent),
+    inset 0 0 0 0.14rem color-mix(in srgb, var(--avatar-frame-main) 12%, transparent);
 }
 
 .avatar-frame-tier-1 > .profile-avatar-accent::after {
@@ -787,94 +794,196 @@ button {
 }
 
 .avatar-frame-tier-2 > .profile-avatar-accent::before {
-  inset: 0.12rem;
-  border: 1px dashed color-mix(in srgb, var(--avatar-frame-highlight) 66%, transparent);
+  inset: 0.03rem;
+  background:
+    radial-gradient(circle at 50% 0.14rem, color-mix(in srgb, var(--avatar-frame-main) 50%, transparent) 0 0.15rem, transparent 0.17rem),
+    radial-gradient(circle at 82% 18%, color-mix(in srgb, var(--avatar-frame-main) 50%, transparent) 0 0.13rem, transparent 0.15rem),
+    radial-gradient(circle at calc(100% - 0.14rem) 50%, color-mix(in srgb, var(--avatar-frame-main) 50%, transparent) 0 0.15rem, transparent 0.17rem),
+    radial-gradient(circle at 82% 82%, color-mix(in srgb, var(--avatar-frame-main) 50%, transparent) 0 0.13rem, transparent 0.15rem),
+    radial-gradient(circle at 50% calc(100% - 0.14rem), color-mix(in srgb, var(--avatar-frame-main) 50%, transparent) 0 0.15rem, transparent 0.17rem),
+    radial-gradient(circle at 18% 82%, color-mix(in srgb, var(--avatar-frame-main) 50%, transparent) 0 0.13rem, transparent 0.15rem),
+    radial-gradient(circle at 0.14rem 50%, color-mix(in srgb, var(--avatar-frame-main) 50%, transparent) 0 0.15rem, transparent 0.17rem),
+    radial-gradient(circle at 18% 18%, color-mix(in srgb, var(--avatar-frame-main) 50%, transparent) 0 0.13rem, transparent 0.15rem);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--avatar-frame-highlight) 70%, transparent),
+    inset 0 0 0 0.16rem color-mix(in srgb, var(--avatar-frame-main) 14%, transparent);
 }
 
 .avatar-frame-tier-2 > .profile-avatar-accent::after {
-  inset: 0.42rem;
-  border: 1px solid color-mix(in srgb, var(--avatar-frame-trim) 48%, transparent);
+  inset: 0.38rem;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--avatar-frame-trim) 54%, transparent);
 }
 
 .avatar-frame-tier-3 > .profile-avatar-accent::before {
-  inset: 0.08rem;
-  background: conic-gradient(from 0deg, transparent 0 10%, color-mix(in srgb, var(--avatar-frame-main) 28%, transparent) 10% 14%, transparent 14% 36%, color-mix(in srgb, var(--avatar-frame-main) 28%, transparent) 36% 40%, transparent 40% 60%, color-mix(in srgb, var(--avatar-frame-main) 28%, transparent) 60% 64%, transparent 64% 86%, color-mix(in srgb, var(--avatar-frame-main) 28%, transparent) 86% 90%, transparent 90% 100%);
-  -webkit-mask: radial-gradient(circle, transparent calc(100% - 0.34rem), #000 calc(100% - 0.34rem));
-  mask: radial-gradient(circle, transparent calc(100% - 0.34rem), #000 calc(100% - 0.34rem));
+  inset: -0.04rem;
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--avatar-frame-main) 44%, transparent) 0 0.28rem, transparent 0.3rem),
+    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--avatar-frame-main) 44%, transparent) 0 0.28rem, transparent 0.3rem),
+    radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--avatar-frame-main) 44%, transparent) 0 0.28rem, transparent 0.3rem),
+    radial-gradient(circle at 0% 50%, color-mix(in srgb, var(--avatar-frame-main) 44%, transparent) 0 0.28rem, transparent 0.3rem),
+    conic-gradient(from 0deg, transparent 0 8%, color-mix(in srgb, var(--avatar-frame-main) 30%, transparent) 8% 17%, transparent 17% 33%, color-mix(in srgb, var(--avatar-frame-main) 30%, transparent) 33% 42%, transparent 42% 58%, color-mix(in srgb, var(--avatar-frame-main) 30%, transparent) 58% 67%, transparent 67% 83%, color-mix(in srgb, var(--avatar-frame-main) 30%, transparent) 83% 92%, transparent 92% 100%);
+  -webkit-mask: radial-gradient(circle, transparent calc(100% - 0.38rem), #000 calc(100% - 0.38rem));
+  mask: radial-gradient(circle, transparent calc(100% - 0.38rem), #000 calc(100% - 0.38rem));
 }
 
 .avatar-frame-tier-3 > .profile-avatar-accent::after {
-  inset: 0.4rem;
-  border: 1px solid color-mix(in srgb, var(--avatar-frame-highlight) 54%, transparent);
+  inset: 0.34rem;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--avatar-frame-highlight) 58%, transparent),
+    inset 0 0 0 0.12rem color-mix(in srgb, var(--avatar-frame-trim) 16%, transparent);
 }
 
 .avatar-frame-tier-4 > .profile-avatar-accent::before {
-  inset: -0.02rem;
-  border: 1px solid color-mix(in srgb, var(--avatar-frame-highlight) 66%, transparent);
-  box-shadow: inset 0 0 0 0.22rem color-mix(in srgb, var(--avatar-frame-main) 12%, transparent);
+  inset: -0.08rem;
+  background:
+    radial-gradient(circle at 50% 0.08rem, color-mix(in srgb, var(--avatar-frame-highlight) 98%, transparent) 0 0.1rem, transparent 0.12rem),
+    radial-gradient(circle at calc(100% - 0.08rem) 50%, color-mix(in srgb, var(--avatar-frame-highlight) 98%, transparent) 0 0.1rem, transparent 0.12rem),
+    radial-gradient(circle at 50% calc(100% - 0.08rem), color-mix(in srgb, var(--avatar-frame-highlight) 98%, transparent) 0 0.1rem, transparent 0.12rem),
+    radial-gradient(circle at 0.08rem 50%, color-mix(in srgb, var(--avatar-frame-highlight) 98%, transparent) 0 0.1rem, transparent 0.12rem);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--avatar-frame-highlight) 72%, transparent),
+    inset 0 0 0 0.23rem color-mix(in srgb, var(--avatar-frame-main) 15%, transparent),
+    inset 0 0 0 0.34rem color-mix(in srgb, var(--avatar-frame-trim) 12%, transparent);
 }
 
 .avatar-frame-tier-4 > .profile-avatar-accent::after {
-  inset: 0.46rem;
-  border: 1px dashed color-mix(in srgb, var(--avatar-frame-trim) 56%, transparent);
+  inset: 0.3rem;
+  background:
+    conic-gradient(from 0deg, transparent 0 5%, color-mix(in srgb, var(--avatar-frame-highlight) 28%, transparent) 5% 7%, transparent 7% 18%, color-mix(in srgb, var(--avatar-frame-highlight) 28%, transparent) 18% 20%, transparent 20% 30%, color-mix(in srgb, var(--avatar-frame-highlight) 28%, transparent) 30% 32%, transparent 32% 43%, color-mix(in srgb, var(--avatar-frame-highlight) 28%, transparent) 43% 45%, transparent 45% 55%, color-mix(in srgb, var(--avatar-frame-highlight) 28%, transparent) 55% 57%, transparent 57% 68%, color-mix(in srgb, var(--avatar-frame-highlight) 28%, transparent) 68% 70%, transparent 70% 80%, color-mix(in srgb, var(--avatar-frame-highlight) 28%, transparent) 80% 82%, transparent 82% 93%, color-mix(in srgb, var(--avatar-frame-highlight) 28%, transparent) 93% 95%, transparent 95% 100%);
+  -webkit-mask: radial-gradient(circle, transparent calc(100% - 0.09rem), #000 calc(100% - 0.09rem));
+  mask: radial-gradient(circle, transparent calc(100% - 0.09rem), #000 calc(100% - 0.09rem));
 }
 
 .avatar-frame-tier-5 > .profile-avatar-accent::before {
-  inset: -0.08rem;
-  background: conic-gradient(from 0deg, transparent 0 6%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 6% 12%, transparent 12% 18%, color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 18% 24%, transparent 24% 30%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 30% 36%, transparent 36% 42%, color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 42% 48%, transparent 48% 54%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 54% 60%, transparent 60% 66%, color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 66% 72%, transparent 72% 78%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 78% 84%, transparent 84% 90%, color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 90% 96%, transparent 96% 100%);
-  -webkit-mask: radial-gradient(circle, transparent calc(100% - 0.4rem), #000 calc(100% - 0.4rem));
-  mask: radial-gradient(circle, transparent calc(100% - 0.4rem), #000 calc(100% - 0.4rem));
-}
-
-.avatar-frame-tier-5 > .profile-avatar-accent::after {
-  inset: 0.38rem;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--avatar-frame-highlight) 52%, transparent), inset 0 0 0 0.18rem color-mix(in srgb, var(--avatar-frame-trim) 18%, transparent);
-}
-
-.avatar-frame-tier-6 > .profile-avatar-accent::before {
-  inset: -0.12rem;
-  background: radial-gradient(circle at 50% 3%, color-mix(in srgb, var(--avatar-frame-main) 38%, transparent) 0 9%, transparent 9.5%), radial-gradient(circle at 97% 50%, color-mix(in srgb, var(--avatar-frame-main) 38%, transparent) 0 9%, transparent 9.5%), radial-gradient(circle at 50% 97%, color-mix(in srgb, var(--avatar-frame-main) 38%, transparent) 0 9%, transparent 9.5%), radial-gradient(circle at 3% 50%, color-mix(in srgb, var(--avatar-frame-main) 38%, transparent) 0 9%, transparent 9.5%);
-}
-
-.avatar-frame-tier-6 > .profile-avatar-accent::after {
-  inset: 0.26rem;
-  border: 1px solid color-mix(in srgb, var(--avatar-frame-highlight) 62%, transparent);
-  box-shadow: inset 0 0 0 0.22rem color-mix(in srgb, var(--avatar-frame-main) 14%, transparent);
-}
-
-.avatar-frame-tier-7 > .profile-avatar-accent::before {
-  inset: -0.16rem;
-  background: conic-gradient(from 0deg, color-mix(in srgb, var(--avatar-frame-main) 26%, transparent) 0 7%, transparent 7% 18%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 18% 25%, transparent 25% 36%, color-mix(in srgb, var(--avatar-frame-main) 26%, transparent) 36% 43%, transparent 43% 54%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 54% 61%, transparent 61% 72%, color-mix(in srgb, var(--avatar-frame-main) 26%, transparent) 72% 79%, transparent 79% 90%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 90% 97%, transparent 97% 100%);
+  inset: -0.14rem;
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--avatar-frame-main) 52%, transparent) 0 0.34rem, transparent 0.36rem),
+    radial-gradient(circle at 85% 15%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 0 0.22rem, transparent 0.24rem),
+    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--avatar-frame-main) 52%, transparent) 0 0.34rem, transparent 0.36rem),
+    radial-gradient(circle at 85% 85%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 0 0.22rem, transparent 0.24rem),
+    radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--avatar-frame-main) 52%, transparent) 0 0.34rem, transparent 0.36rem),
+    radial-gradient(circle at 15% 85%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 0 0.22rem, transparent 0.24rem),
+    radial-gradient(circle at 0% 50%, color-mix(in srgb, var(--avatar-frame-main) 52%, transparent) 0 0.34rem, transparent 0.36rem),
+    radial-gradient(circle at 15% 15%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 0 0.22rem, transparent 0.24rem),
+    conic-gradient(from 0deg, transparent 0 7%, color-mix(in srgb, var(--avatar-frame-main) 26%, transparent) 7% 13%, transparent 13% 19%, color-mix(in srgb, var(--avatar-frame-main) 26%, transparent) 19% 25%, transparent 25% 31%, color-mix(in srgb, var(--avatar-frame-main) 26%, transparent) 31% 37%, transparent 37% 43%, color-mix(in srgb, var(--avatar-frame-main) 26%, transparent) 43% 49%, transparent 49% 55%, color-mix(in srgb, var(--avatar-frame-main) 26%, transparent) 55% 61%, transparent 61% 67%, color-mix(in srgb, var(--avatar-frame-main) 26%, transparent) 67% 73%, transparent 73% 79%, color-mix(in srgb, var(--avatar-frame-main) 26%, transparent) 79% 85%, transparent 85% 91%, color-mix(in srgb, var(--avatar-frame-main) 26%, transparent) 91% 97%, transparent 97% 100%);
   -webkit-mask: radial-gradient(circle, transparent calc(100% - 0.44rem), #000 calc(100% - 0.44rem));
   mask: radial-gradient(circle, transparent calc(100% - 0.44rem), #000 calc(100% - 0.44rem));
 }
 
+.avatar-frame-tier-5 > .profile-avatar-accent::after {
+  inset: 0.28rem;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--avatar-frame-highlight) 60%, transparent),
+    inset 0 0 0 0.14rem color-mix(in srgb, var(--avatar-frame-main) 12%, transparent),
+    inset 0 0 0 0.28rem color-mix(in srgb, var(--avatar-frame-trim) 16%, transparent);
+}
+
+.avatar-frame-tier-6 > .profile-avatar-accent::before {
+  inset: -0.18rem;
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--avatar-frame-highlight) 96%, transparent) 0 0.18rem, transparent 0.2rem),
+    radial-gradient(circle at 72% 8%, color-mix(in srgb, var(--avatar-frame-main) 42%, transparent) 0 0.22rem, transparent 0.24rem),
+    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--avatar-frame-highlight) 96%, transparent) 0 0.18rem, transparent 0.2rem),
+    radial-gradient(circle at 92% 72%, color-mix(in srgb, var(--avatar-frame-main) 42%, transparent) 0 0.22rem, transparent 0.24rem),
+    radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--avatar-frame-highlight) 96%, transparent) 0 0.18rem, transparent 0.2rem),
+    radial-gradient(circle at 28% 92%, color-mix(in srgb, var(--avatar-frame-main) 42%, transparent) 0 0.22rem, transparent 0.24rem),
+    radial-gradient(circle at 0% 50%, color-mix(in srgb, var(--avatar-frame-highlight) 96%, transparent) 0 0.18rem, transparent 0.2rem),
+    radial-gradient(circle at 8% 28%, color-mix(in srgb, var(--avatar-frame-main) 42%, transparent) 0 0.22rem, transparent 0.24rem);
+}
+
+.avatar-frame-tier-6 > .profile-avatar-accent::after {
+  inset: 0.2rem;
+  background:
+    conic-gradient(from 0deg, transparent 0 9%, color-mix(in srgb, var(--avatar-frame-main) 22%, transparent) 9% 16%, transparent 16% 34%, color-mix(in srgb, var(--avatar-frame-main) 22%, transparent) 34% 41%, transparent 41% 59%, color-mix(in srgb, var(--avatar-frame-main) 22%, transparent) 59% 66%, transparent 66% 84%, color-mix(in srgb, var(--avatar-frame-main) 22%, transparent) 84% 91%, transparent 91% 100%);
+  -webkit-mask: radial-gradient(circle, transparent calc(100% - 0.08rem), #000 calc(100% - 0.08rem));
+  mask: radial-gradient(circle, transparent calc(100% - 0.08rem), #000 calc(100% - 0.08rem));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--avatar-frame-highlight) 66%, transparent),
+    inset 0 0 0 0.24rem color-mix(in srgb, var(--avatar-frame-trim) 16%, transparent);
+}
+
+.avatar-frame-tier-7 > .profile-avatar-accent::before {
+  inset: -0.24rem;
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--avatar-frame-main) 56%, transparent) 0 0.38rem, transparent 0.4rem),
+    radial-gradient(circle at 79% 8%, color-mix(in srgb, var(--avatar-frame-main) 30%, transparent) 0 0.24rem, transparent 0.26rem),
+    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--avatar-frame-main) 56%, transparent) 0 0.38rem, transparent 0.4rem),
+    radial-gradient(circle at 92% 79%, color-mix(in srgb, var(--avatar-frame-main) 30%, transparent) 0 0.24rem, transparent 0.26rem),
+    radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--avatar-frame-main) 56%, transparent) 0 0.38rem, transparent 0.4rem),
+    radial-gradient(circle at 21% 92%, color-mix(in srgb, var(--avatar-frame-main) 30%, transparent) 0 0.24rem, transparent 0.26rem),
+    radial-gradient(circle at 0% 50%, color-mix(in srgb, var(--avatar-frame-main) 56%, transparent) 0 0.38rem, transparent 0.4rem),
+    radial-gradient(circle at 8% 21%, color-mix(in srgb, var(--avatar-frame-main) 30%, transparent) 0 0.24rem, transparent 0.26rem);
+}
+
 .avatar-frame-tier-7 > .profile-avatar-accent::after {
-  inset: 0.24rem;
-  border: 1px dashed color-mix(in srgb, var(--avatar-frame-highlight) 68%, transparent);
+  inset: 0.16rem;
+  background:
+    conic-gradient(from 0deg, color-mix(in srgb, var(--avatar-frame-highlight) 26%, transparent) 0 4%, transparent 4% 12%, color-mix(in srgb, var(--avatar-frame-highlight) 26%, transparent) 12% 16%, transparent 16% 29%, color-mix(in srgb, var(--avatar-frame-highlight) 26%, transparent) 29% 33%, transparent 33% 46%, color-mix(in srgb, var(--avatar-frame-highlight) 26%, transparent) 46% 50%, transparent 50% 63%, color-mix(in srgb, var(--avatar-frame-highlight) 26%, transparent) 63% 67%, transparent 67% 80%, color-mix(in srgb, var(--avatar-frame-highlight) 26%, transparent) 80% 84%, transparent 84% 97%, color-mix(in srgb, var(--avatar-frame-highlight) 26%, transparent) 97% 100%);
+  -webkit-mask: radial-gradient(circle, transparent calc(100% - 0.1rem), #000 calc(100% - 0.1rem));
+  mask: radial-gradient(circle, transparent calc(100% - 0.1rem), #000 calc(100% - 0.1rem));
+  box-shadow: inset 0 0 0 0.22rem color-mix(in srgb, var(--avatar-frame-trim) 18%, transparent);
 }
 
 .avatar-frame-tier-8 > .profile-avatar-accent::before {
-  inset: -0.18rem;
-  background: radial-gradient(circle at 50% 1%, color-mix(in srgb, var(--avatar-frame-main) 40%, transparent) 0 10%, transparent 10.5%), radial-gradient(circle at 79% 11%, color-mix(in srgb, var(--avatar-frame-main) 22%, transparent) 0 7%, transparent 7.5%), radial-gradient(circle at 99% 50%, color-mix(in srgb, var(--avatar-frame-main) 40%, transparent) 0 10%, transparent 10.5%), radial-gradient(circle at 79% 89%, color-mix(in srgb, var(--avatar-frame-main) 22%, transparent) 0 7%, transparent 7.5%), radial-gradient(circle at 50% 99%, color-mix(in srgb, var(--avatar-frame-main) 40%, transparent) 0 10%, transparent 10.5%), radial-gradient(circle at 21% 89%, color-mix(in srgb, var(--avatar-frame-main) 22%, transparent) 0 7%, transparent 7.5%), radial-gradient(circle at 1% 50%, color-mix(in srgb, var(--avatar-frame-main) 40%, transparent) 0 10%, transparent 10.5%), radial-gradient(circle at 21% 11%, color-mix(in srgb, var(--avatar-frame-main) 22%, transparent) 0 7%, transparent 7.5%);
+  inset: -0.26rem;
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--avatar-frame-highlight) 98%, transparent) 0 0.16rem, transparent 0.18rem),
+    radial-gradient(circle at 68% 4%, color-mix(in srgb, var(--avatar-frame-main) 56%, transparent) 0 0.28rem, transparent 0.3rem),
+    radial-gradient(circle at 88% 12%, color-mix(in srgb, var(--avatar-frame-main) 28%, transparent) 0 0.18rem, transparent 0.2rem),
+    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--avatar-frame-highlight) 98%, transparent) 0 0.16rem, transparent 0.18rem),
+    radial-gradient(circle at 96% 68%, color-mix(in srgb, var(--avatar-frame-main) 56%, transparent) 0 0.28rem, transparent 0.3rem),
+    radial-gradient(circle at 88% 88%, color-mix(in srgb, var(--avatar-frame-main) 28%, transparent) 0 0.18rem, transparent 0.2rem),
+    radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--avatar-frame-highlight) 98%, transparent) 0 0.16rem, transparent 0.18rem),
+    radial-gradient(circle at 32% 96%, color-mix(in srgb, var(--avatar-frame-main) 56%, transparent) 0 0.28rem, transparent 0.3rem),
+    radial-gradient(circle at 12% 88%, color-mix(in srgb, var(--avatar-frame-main) 28%, transparent) 0 0.18rem, transparent 0.2rem),
+    radial-gradient(circle at 0% 50%, color-mix(in srgb, var(--avatar-frame-highlight) 98%, transparent) 0 0.16rem, transparent 0.18rem),
+    radial-gradient(circle at 4% 32%, color-mix(in srgb, var(--avatar-frame-main) 56%, transparent) 0 0.28rem, transparent 0.3rem),
+    radial-gradient(circle at 12% 12%, color-mix(in srgb, var(--avatar-frame-main) 28%, transparent) 0 0.18rem, transparent 0.2rem);
 }
 
 .avatar-frame-tier-8 > .profile-avatar-accent::after {
-  inset: 0.22rem;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--avatar-frame-highlight) 66%, transparent), inset 0 0 0 0.28rem color-mix(in srgb, var(--avatar-frame-trim) 20%, transparent);
+  inset: 0.12rem;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--avatar-frame-highlight) 70%, transparent),
+    inset 0 0 0 0.16rem color-mix(in srgb, var(--avatar-frame-main) 12%, transparent),
+    inset 0 0 0 0.34rem color-mix(in srgb, var(--avatar-frame-trim) 18%, transparent);
 }
 
 .avatar-frame-tier-9 > .profile-avatar-accent::before {
-  inset: -0.22rem;
-  background: conic-gradient(from 0deg, color-mix(in srgb, var(--avatar-frame-main) 30%, transparent) 0 5%, transparent 5% 10%, color-mix(in srgb, var(--avatar-frame-main) 42%, transparent) 10% 15%, transparent 15% 20%, color-mix(in srgb, var(--avatar-frame-main) 30%, transparent) 20% 25%, transparent 25% 30%, color-mix(in srgb, var(--avatar-frame-main) 42%, transparent) 30% 35%, transparent 35% 40%, color-mix(in srgb, var(--avatar-frame-main) 30%, transparent) 40% 45%, transparent 45% 50%, color-mix(in srgb, var(--avatar-frame-main) 42%, transparent) 50% 55%, transparent 55% 60%, color-mix(in srgb, var(--avatar-frame-main) 30%, transparent) 60% 65%, transparent 65% 70%, color-mix(in srgb, var(--avatar-frame-main) 42%, transparent) 70% 75%, transparent 75% 80%, color-mix(in srgb, var(--avatar-frame-main) 30%, transparent) 80% 85%, transparent 85% 90%, color-mix(in srgb, var(--avatar-frame-main) 42%, transparent) 90% 95%, transparent 95% 100%);
-  -webkit-mask: radial-gradient(circle, transparent calc(100% - 0.48rem), #000 calc(100% - 0.48rem));
-  mask: radial-gradient(circle, transparent calc(100% - 0.48rem), #000 calc(100% - 0.48rem));
+  inset: -0.32rem;
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--avatar-frame-highlight) 100%, transparent) 0 0.18rem, transparent 0.2rem),
+    radial-gradient(circle at 69% 2%, color-mix(in srgb, var(--avatar-frame-main) 60%, transparent) 0 0.34rem, transparent 0.36rem),
+    radial-gradient(circle at 84% 8%, color-mix(in srgb, var(--avatar-frame-main) 36%, transparent) 0 0.24rem, transparent 0.26rem),
+    radial-gradient(circle at 98% 31%, color-mix(in srgb, var(--avatar-frame-main) 26%, transparent) 0 0.2rem, transparent 0.22rem),
+    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--avatar-frame-highlight) 100%, transparent) 0 0.18rem, transparent 0.2rem),
+    radial-gradient(circle at 98% 69%, color-mix(in srgb, var(--avatar-frame-main) 26%, transparent) 0 0.2rem, transparent 0.22rem),
+    radial-gradient(circle at 84% 92%, color-mix(in srgb, var(--avatar-frame-main) 36%, transparent) 0 0.24rem, transparent 0.26rem),
+    radial-gradient(circle at 69% 98%, color-mix(in srgb, var(--avatar-frame-main) 60%, transparent) 0 0.34rem, transparent 0.36rem),
+    radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--avatar-frame-highlight) 100%, transparent) 0 0.18rem, transparent 0.2rem),
+    radial-gradient(circle at 31% 98%, color-mix(in srgb, var(--avatar-frame-main) 60%, transparent) 0 0.34rem, transparent 0.36rem),
+    radial-gradient(circle at 16% 92%, color-mix(in srgb, var(--avatar-frame-main) 36%, transparent) 0 0.24rem, transparent 0.26rem),
+    radial-gradient(circle at 2% 69%, color-mix(in srgb, var(--avatar-frame-main) 26%, transparent) 0 0.2rem, transparent 0.22rem),
+    radial-gradient(circle at 0% 50%, color-mix(in srgb, var(--avatar-frame-highlight) 100%, transparent) 0 0.18rem, transparent 0.2rem),
+    radial-gradient(circle at 2% 31%, color-mix(in srgb, var(--avatar-frame-main) 26%, transparent) 0 0.2rem, transparent 0.22rem),
+    radial-gradient(circle at 16% 8%, color-mix(in srgb, var(--avatar-frame-main) 36%, transparent) 0 0.24rem, transparent 0.26rem),
+    radial-gradient(circle at 31% 2%, color-mix(in srgb, var(--avatar-frame-main) 60%, transparent) 0 0.34rem, transparent 0.36rem),
+    conic-gradient(from 0deg, color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 0 4%, transparent 4% 9%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 9% 13%, transparent 13% 17%, color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 17% 21%, transparent 21% 29%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 29% 33%, transparent 33% 37%, color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 37% 41%, transparent 41% 49%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 49% 53%, transparent 53% 57%, color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 57% 61%, transparent 61% 69%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 69% 73%, transparent 73% 77%, color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 77% 81%, transparent 81% 89%, color-mix(in srgb, var(--avatar-frame-main) 34%, transparent) 89% 93%, transparent 93% 97%, color-mix(in srgb, var(--avatar-frame-main) 24%, transparent) 97% 100%);
+  -webkit-mask: radial-gradient(circle, transparent calc(100% - 0.52rem), #000 calc(100% - 0.52rem));
+  mask: radial-gradient(circle, transparent calc(100% - 0.52rem), #000 calc(100% - 0.52rem));
 }
 
 .avatar-frame-tier-9 > .profile-avatar-accent::after {
-  inset: 0.16rem;
-  border: 1px solid color-mix(in srgb, var(--avatar-frame-highlight) 70%, transparent);
-  box-shadow: inset 0 0 0 0.2rem color-mix(in srgb, var(--avatar-frame-main) 15%, transparent), inset 0 0 0 0.38rem color-mix(in srgb, var(--avatar-frame-trim) 22%, transparent);
+  inset: 0.08rem;
+  background:
+    radial-gradient(circle at 50% 0.22rem, color-mix(in srgb, var(--avatar-frame-highlight) 94%, transparent) 0 0.1rem, transparent 0.12rem),
+    radial-gradient(circle at calc(100% - 0.22rem) 50%, color-mix(in srgb, var(--avatar-frame-highlight) 94%, transparent) 0 0.1rem, transparent 0.12rem),
+    radial-gradient(circle at 50% calc(100% - 0.22rem), color-mix(in srgb, var(--avatar-frame-highlight) 94%, transparent) 0 0.1rem, transparent 0.12rem),
+    radial-gradient(circle at 0.22rem 50%, color-mix(in srgb, var(--avatar-frame-highlight) 94%, transparent) 0 0.1rem, transparent 0.12rem);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--avatar-frame-highlight) 74%, transparent),
+    inset 0 0 0 0.18rem color-mix(in srgb, var(--avatar-frame-main) 12%, transparent),
+    inset 0 0 0 0.34rem color-mix(in srgb, var(--avatar-frame-trim) 20%, transparent);
 }
 
 .profile-emblem-row {
