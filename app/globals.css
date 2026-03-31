@@ -1,38 +1,42 @@
 :root {
   color-scheme: light;
-  --bg: #f1e7d7;
-  --surface: rgba(255, 249, 241, 0.82);
-  --surface-strong: rgba(255, 252, 247, 0.94);
-  --surface-control: rgba(255, 255, 255, 0.72);
-  --surface-control-strong: rgba(255, 255, 255, 0.9);
-  --text: #1e1b18;
-  --muted: #6e6459;
-  --line: rgba(49, 39, 28, 0.12);
-  --accent: #8db9ff;
-  --accent-deep: #355f9a;
-  --accent-soft: rgba(141, 185, 255, 0.24);
-  --success: #206247;
-  --shadow: 0 18px 44px rgba(40, 27, 16, 0.12);
-  --shadow-strong: 0 22px 60px rgba(40, 27, 16, 0.18);
+  --bg: #edf3ff;
+  --surface: rgba(249, 252, 255, 0.82);
+  --surface-strong: rgba(255, 255, 255, 0.95);
+  --surface-control: rgba(255, 255, 255, 0.76);
+  --surface-control-strong: rgba(255, 255, 255, 0.92);
+  --text: #1a2230;
+  --muted: #66758a;
+  --line: rgba(48, 71, 112, 0.14);
+  --accent: #7ab2ff;
+  --accent-2: #79ecd9;
+  --accent-3: #b492ff;
+  --accent-deep: #295d9c;
+  --accent-soft: rgba(122, 178, 255, 0.24);
+  --success: #1f8767;
+  --shadow: 0 18px 44px rgba(41, 69, 119, 0.12);
+  --shadow-strong: 0 24px 66px rgba(41, 69, 119, 0.18);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
-    --bg: #0d1117;
-    --surface: rgba(22, 27, 34, 0.84);
-    --surface-strong: rgba(26, 32, 40, 0.94);
-    --surface-control: rgba(34, 40, 49, 0.8);
-    --surface-control-strong: rgba(40, 47, 57, 0.92);
-    --text: #f2ede7;
-    --muted: #b5aca2;
-    --line: rgba(245, 235, 225, 0.1);
-    --accent: #9cc6ff;
-    --accent-deep: #dbe9ff;
-    --accent-soft: rgba(156, 198, 255, 0.2);
-    --success: #6fd3a1;
-    --shadow: 0 20px 54px rgba(0, 0, 0, 0.34);
-    --shadow-strong: 0 24px 64px rgba(0, 0, 0, 0.44);
+    --bg: #0a1018;
+    --surface: rgba(17, 24, 36, 0.86);
+    --surface-strong: rgba(21, 29, 43, 0.95);
+    --surface-control: rgba(28, 37, 52, 0.86);
+    --surface-control-strong: rgba(35, 45, 63, 0.95);
+    --text: #f2f6ff;
+    --muted: #9fb0c7;
+    --line: rgba(186, 214, 255, 0.12);
+    --accent: #7fb8ff;
+    --accent-2: #63e6d1;
+    --accent-3: #ad8cff;
+    --accent-deep: #e3efff;
+    --accent-soft: rgba(127, 184, 255, 0.2);
+    --success: #79e3b5;
+    --shadow: 0 22px 56px rgba(0, 0, 0, 0.38);
+    --shadow-strong: 0 28px 72px rgba(0, 0, 0, 0.5);
   }
 }
 
@@ -50,9 +54,10 @@ body {
   font-family: Georgia, "Times New Roman", serif;
   color: var(--text);
   background:
-    radial-gradient(circle at top, rgba(141, 185, 255, 0.34), transparent 28%),
-    radial-gradient(circle at bottom right, rgba(103, 145, 214, 0.12), transparent 26%),
-    linear-gradient(180deg, #e2ebf8 0%, #eef3fb 46%, #dfe8f5 100%);
+    radial-gradient(circle at 14% 0%, rgba(122, 178, 255, 0.42), transparent 28%),
+    radial-gradient(circle at 84% 12%, rgba(121, 236, 217, 0.2), transparent 22%),
+    radial-gradient(circle at bottom right, rgba(180, 146, 255, 0.14), transparent 24%),
+    linear-gradient(180deg, #edf4ff 0%, #e6eefc 48%, #dde7f7 100%);
   transition: background 200ms ease, color 200ms ease;
 }
 
@@ -132,7 +137,9 @@ button {
 .panel,
 .stat-card,
 .climb-card {
-  background: var(--surface);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 42%),
+    var(--surface);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
   backdrop-filter: blur(12px);
@@ -151,6 +158,8 @@ button {
   justify-content: space-between;
   min-height: 190px;
   background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--accent-2) 20%, transparent), transparent 35%),
+    radial-gradient(circle at bottom left, color-mix(in srgb, var(--accent) 18%, transparent), transparent 34%),
     linear-gradient(180deg, var(--surface-control-strong), var(--surface)),
     var(--surface-strong);
 }
@@ -260,7 +269,8 @@ button {
 
 .friends-shell {
   background:
-    radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 10%, transparent), transparent 30%),
+    radial-gradient(circle at top right, color-mix(in srgb, var(--accent-3) 22%, transparent), transparent 28%),
+    radial-gradient(circle at bottom left, color-mix(in srgb, var(--accent-2) 14%, transparent), transparent 34%),
     linear-gradient(180deg, color-mix(in srgb, var(--surface-control) 72%, var(--surface-strong)), color-mix(in srgb, var(--surface) 88%, #10151d));
   border-color: color-mix(in srgb, var(--accent) 14%, var(--line));
   box-shadow: var(--shadow-strong);
@@ -568,7 +578,8 @@ button {
 }
 
 .range-chip.active {
-  background: var(--accent-soft);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 18%, transparent), color-mix(in srgb, var(--accent-3) 12%, transparent));
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
   color: var(--accent-deep);
 }
 
@@ -626,8 +637,9 @@ button {
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(circle at top right, rgba(242, 191, 136, 0.45), transparent 30%),
-    radial-gradient(circle at bottom left, rgba(141, 185, 255, 0.18), transparent 38%),
+    radial-gradient(circle at top right, color-mix(in srgb, var(--accent-3) 34%, transparent), transparent 30%),
+    radial-gradient(circle at bottom left, color-mix(in srgb, var(--accent-2) 24%, transparent), transparent 38%),
+    radial-gradient(circle at center right, color-mix(in srgb, var(--accent) 18%, transparent), transparent 28%),
     linear-gradient(180deg, color-mix(in srgb, var(--surface-control-strong) 86%, white), var(--surface-strong));
 }
 
@@ -1200,7 +1212,7 @@ button {
 
 .primary-button {
   padding: 0.9rem 1.1rem;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, white), color-mix(in srgb, var(--accent) 70%, #315f9c));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 92%, white) 0%, color-mix(in srgb, var(--accent-2) 34%, var(--accent)) 52%, color-mix(in srgb, var(--accent-3) 24%, var(--accent)) 100%);
   color: white;
   font-family: "Trebuchet MS", "Gill Sans", sans-serif;
   box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 28%, transparent);
@@ -1320,7 +1332,7 @@ button {
 .badge.active,
 .badge.completed,
 .mini-badge.ready {
-  background: var(--accent-soft);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 16%, transparent), color-mix(in srgb, var(--accent-3) 12%, transparent));
   border-color: color-mix(in srgb, var(--accent) 28%, transparent);
   color: var(--accent-deep);
 }
@@ -1348,6 +1360,9 @@ button {
   border-radius: 22px;
   display: grid;
   gap: 0.4rem;
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 12%, transparent), transparent 42%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-control) 82%, transparent), var(--surface));
 }
 
 .stat-card span {
@@ -1387,6 +1402,7 @@ button {
   border-radius: 24px;
   overflow: hidden;
   background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 12%, transparent), transparent 34%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 38%),
     var(--surface-strong);
   border-color: color-mix(in srgb, var(--accent) 18%, var(--line));
@@ -1612,9 +1628,10 @@ button {
 @media (prefers-color-scheme: dark) {
   body {
     background:
-      radial-gradient(circle at top, rgba(156, 198, 255, 0.22), transparent 24%),
-      radial-gradient(circle at bottom right, rgba(35, 57, 93, 0.34), transparent 28%),
-      linear-gradient(180deg, #0d1117 0%, #121923 45%, #0f151f 100%);
+      radial-gradient(circle at 14% 0%, rgba(127, 184, 255, 0.28), transparent 26%),
+      radial-gradient(circle at 86% 10%, rgba(99, 230, 209, 0.16), transparent 20%),
+      radial-gradient(circle at bottom right, rgba(173, 140, 255, 0.16), transparent 26%),
+      linear-gradient(180deg, #0a1018 0%, #111926 45%, #0c131d 100%);
   }
 
   .bottom-nav,
@@ -1646,7 +1663,8 @@ button {
 
   .friends-shell {
     background:
-      radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 12%, transparent), transparent 32%),
+      radial-gradient(circle at top right, color-mix(in srgb, var(--accent-3) 24%, transparent), transparent 30%),
+      radial-gradient(circle at bottom left, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent 34%),
       linear-gradient(180deg, color-mix(in srgb, var(--surface-control) 78%, var(--surface-strong)), color-mix(in srgb, var(--surface) 96%, #0c1219));
     border-color: color-mix(in srgb, var(--accent) 16%, var(--line));
   }
