@@ -11,6 +11,7 @@ export type ProfileRow = {
   avatar_url: string | null;
   selected_emblems: string[];
   selected_avatar_border: string | null;
+  selected_theme: string | null;
   device_id: string;
   created_at: string;
 };
@@ -80,6 +81,12 @@ export type FriendSummary = {
   recentSends30: number;
   activeDays30: number;
   leaderboardScore: number;
+  leaderboardBreakdown: {
+    levelPoints: number;
+    personalBestPoints: number;
+    recentSendsPoints: number;
+    activeDaysPoints: number;
+  };
 };
 
 export type FriendFeedClimb = ClimbRow & {

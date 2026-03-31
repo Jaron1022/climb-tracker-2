@@ -28,6 +28,7 @@ export async function createProfile(displayName: string) {
     avatar_url: null,
     selected_emblems: [],
     selected_avatar_border: null,
+    selected_theme: null,
     device_id: "local-device",
     created_at: new Date().toISOString()
   };

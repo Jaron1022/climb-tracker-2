@@ -215,6 +215,24 @@ export async function updateSelectedAvatarBorder(userId: string, selectedAvatarB
   return data as ProfileRow;
 }
 
+export async function updateSelectedTheme(userId: string, selectedTheme: string | null) {
+  const supabase = getSupabaseBrowserClient() as any;
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({
+      selected_theme: selectedTheme
+    })
+    .eq("id", userId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as ProfileRow;
+}
+
 export async function fetchClimbsForUser(userId: string) {
   const supabase = getSupabaseBrowserClient() as any;
   const { data, error } = await supabase

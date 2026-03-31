@@ -4,17 +4,18 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import clsx from "clsx";
 import {
   AVATAR_BORDER_COLORS,
-  AVATAR_FRAME_STYLES,
   AVATAR_FRAME_TIERS,
-  getAvatarFrameTier,
   normalizeSelectedAvatarBorder,
+  resolveAvatarFrameTier,
   serializeAvatarBorderSelection
 } from "@/lib/avatar-borders";
 import { EMBLEM_DEFINITIONS, getUnlockedEmblems, normalizeSelectedEmblems } from "@/lib/emblems";
+import { APP_THEMES, normalizeSelectedTheme } from "@/lib/themes";
 import { CLIMB_COLORS, CLIMB_GRADES, DEFAULT_FORM, STYLE_TAG_GROUPS, climbToXp, gradeToXp } from "@/lib/xp";
 import { uploadPhoto } from "@/lib/local-store";
 import {
   buildLeaderboardScore,
+  getLeaderboardScoreBreakdown,
   fetchFriendshipsForUser,
   fetchFriendFeed,
   fetchFriends,
@@ -42,6 +43,7 @@ import {
   updateProfileAvatar,
   updateSelectedAvatarBorder,
   updateSelectedEmblems,
+  updateSelectedTheme,
   updateDisplayName,
   updateClimbForUser
 } from "@/lib/supabase-store";
@@ -84,7 +86,7 @@ export default function HomePage() {
   const [booting, setBooting] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [activeAction, setActiveAction] = useState<"auth" | "rename" | "avatar" | "emblems" | "logout" | "account-delete" | "password-reset" | "password-update" | "climb" | "edit" | "load" | "delete" | "">("");
+  const [activeAction, setActiveAction] = useState<"auth" | "rename" | "avatar" | "emblems" | "theme" | "logout" | "account-delete" | "password-reset" | "password-update" | "climb" | "edit" | "load" | "delete" | "">("");
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
   const [climbPendingDelete, setClimbPendingDelete] = useState<ClimbRow | null>(null);
   const [editingClimb, setEditingClimb] = useState<ClimbRow | null>(null);
@@ -94,7 +96,8 @@ export default function HomePage() {
   const [isEmblemPickerOpen, setIsEmblemPickerOpen] = useState(false);
   const [selectedEmblemDraft, setSelectedEmblemDraft] = useState<string[]>([]);
   const [isBorderPickerOpen, setIsBorderPickerOpen] = useState(false);
-  const [selectedBorderDraft, setSelectedBorderDraft] = useState<string>(serializeAvatarBorderSelection("ring", "silver"));
+  const [selectedBorderDraft, setSelectedBorderDraft] = useState<string>(serializeAvatarBorderSelection("ring", "silver", null));
+  const [selectedThemeDraft, setSelectedThemeDraft] = useState("sky");
   const [historyGradeFilter, setHistoryGradeFilter] = useState<"All" | ClimbRow["grade"]>("All");
   const [historyTagQuery, setHistoryTagQuery] = useState("");
   const [historyVisibleCount, setHistoryVisibleCount] = useState(20);
@@ -106,6 +109,7 @@ export default function HomePage() {
   const [friendFeedVisibleCount, setFriendFeedVisibleCount] = useState(20);
   const [pendingOutgoingFriendIds, setPendingOutgoingFriendIds] = useState<string[]>([]);
   const [friendsTab, setFriendsTab] = useState<"discover" | "requests" | "circle" | "leaderboard">("circle");
+  const [expandedLeaderboardId, setExpandedLeaderboardId] = useState("");
   const [progressRange, setProgressRange] = useState<ProgressRange>("ALL");
   const [isLandscapePhone, setIsLandscapePhone] = useState(false);
 
@@ -249,6 +253,10 @@ export default function HomePage() {
       setSelectedFriendId("");
     }
   }, [friends, selectedFriendId]);
+
+  useEffect(() => {
+    setSelectedThemeDraft(normalizeSelectedTheme(activeProfile?.selected_theme));
+  }, [activeProfile?.selected_theme]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -604,6 +612,27 @@ export default function HomePage() {
     }
   }
 
+  async function handleThemeSave() {
+    if (!activeProfileId) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setActiveAction("theme");
+      setError("");
+      setSuccess("");
+      const updatedProfile = await updateSelectedTheme(activeProfileId, selectedThemeDraft);
+      setActiveProfile(updatedProfile);
+      setSuccess("Theme updated.");
+    } catch (err) {
+      setError(getMessage(err));
+    } finally {
+      setLoading(false);
+      setActiveAction("");
+    }
+  }
+
   function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const selected = event.target.files?.[0] ?? null;
 
@@ -751,11 +780,12 @@ export default function HomePage() {
     () => normalizeSelectedEmblems(activeProfile?.selected_emblems ?? [], unlockedEmblemIds),
     [activeProfile?.selected_emblems, unlockedEmblemIds]
   );
-  const selectedAvatarBorderValue = activeProfile?.selected_avatar_border ?? serializeAvatarBorderSelection("ring", "silver");
+  const selectedAvatarBorderValue = activeProfile?.selected_avatar_border ?? serializeAvatarBorderSelection("ring", "silver", null);
   const selectedAvatarBorder = useMemo(
     () => normalizeSelectedAvatarBorder(selectedAvatarBorderValue),
     [selectedAvatarBorderValue]
   );
+  const selectedTheme = useMemo(() => normalizeSelectedTheme(activeProfile?.selected_theme), [activeProfile?.selected_theme]);
   const selectedFriend = useMemo(
     () => friends.find((friend) => friend.friendId === selectedFriendId) ?? null,
     [friends, selectedFriendId]
@@ -781,6 +811,7 @@ export default function HomePage() {
           recentSends30: recentClimbs.length,
           activeDays30,
           score: buildLeaderboardScore(stats.level, stats.personalBest as Grade, recentClimbs.length, activeDays30),
+          breakdown: getLeaderboardScoreBreakdown(stats.level, stats.personalBest as Grade, recentClimbs.length, activeDays30),
           isYou: true
         }
       : null;
@@ -796,6 +827,7 @@ export default function HomePage() {
       recentSends30: friend.recentSends30,
       activeDays30: friend.activeDays30,
       score: friend.leaderboardScore,
+      breakdown: friend.leaderboardBreakdown,
       isYou: false
     }));
 
@@ -1248,29 +1280,32 @@ export default function HomePage() {
       {isBorderPickerOpen ? (
         <section className="lightbox emblem-picker-overlay" aria-label="Select avatar border" role="dialog">
           <div className="panel emblem-picker-modal border-picker-modal">
-            <div className="emblem-picker-handle" aria-hidden="true" />
-            <div className="section-title-row">
-              <div>
-                <p className="eyebrow">Avatar frame</p>
-                <h2>Build your frame</h2>
+            <div className="emblem-picker-static border-picker-static">
+              <div className="emblem-picker-handle" aria-hidden="true" />
+              <div className="section-title-row">
+                <div>
+                  <p className="eyebrow">Avatar frame</p>
+                  <h2>Choose your border</h2>
+                </div>
+                <button className="secondary-button emblem-picker-close" onClick={() => setIsBorderPickerOpen(false)} type="button">
+                  Close
+                </button>
               </div>
-              <button className="secondary-button emblem-picker-close" onClick={() => setIsBorderPickerOpen(false)} type="button">
-                Close
-              </button>
+              <p className="muted emblem-picker-copy">Pick a tint, then choose any frame tier you have already reached. For now, every level border is available as soon as you hit that level.</p>
+              <div className="border-preview-row">
+                {renderProfileAvatar(
+                  activeProfile?.display_name ?? "You",
+                  activeProfile?.avatar_url ?? null,
+                  selectedEmblems,
+                  "account-avatar account-avatar-large",
+                  stats.level,
+                  selectedBorderDraft
+                )}
+                <p className="muted border-preview-copy">Level {stats.level} preview. You can keep any unlocked tier equipped instead of being forced into the newest one.</p>
+              </div>
             </div>
-            <p className="muted emblem-picker-copy">Pick a tint with the swatches below. Your circular frame evolves automatically as you level up.</p>
-            <div className="border-preview-row">
-              {renderProfileAvatar(
-                activeProfile?.display_name ?? "You",
-                activeProfile?.avatar_url ?? null,
-                selectedEmblems,
-                "account-avatar account-avatar-large",
-                stats.level,
-                selectedBorderDraft
-              )}
-              <p className="muted border-preview-copy">Level {stats.level} preview. The design complexity evolves for you over time.</p>
-            </div>
-            <div className="emblem-picker-scroll border-picker-scroll">              <section className="emblem-section">
+            <div className="emblem-picker-scroll border-picker-scroll">
+              <section className="emblem-section">
                 <div className="section-title-row">
                   <div>
                     <p className="eyebrow">Colors</p>
@@ -1280,7 +1315,7 @@ export default function HomePage() {
                 <div className="frame-color-row" role="list" aria-label="Avatar frame colors">
                   {AVATAR_BORDER_COLORS.map((border) => {
                     const draft = normalizeSelectedAvatarBorder(selectedBorderDraft);
-                    const borderValue = serializeAvatarBorderSelection(draft.style, border.id);
+                    const borderValue = serializeAvatarBorderSelection(draft.style, border.id, draft.tierId);
                     return (
                       <button
                         aria-label={`Select frame color ${border.id}`}
@@ -1297,31 +1332,47 @@ export default function HomePage() {
               <section className="emblem-section">
                 <div className="section-title-row">
                   <div>
-                    <p className="eyebrow">Evolution</p>
-                    <h3>How your frame grows</h3>
+                    <p className="eyebrow">Frame tiers</p>
+                    <h3>Pick any unlocked border</h3>
                   </div>
                 </div>
                 <div className="frame-tier-strip">
-                  {AVATAR_FRAME_TIERS.map((tier) => (
-                    <div className={clsx("frame-tier-chip", stats.level >= tier.unlockLevel && "unlocked")} key={tier.id}>
-                      {renderProfileAvatar(
-                        activeProfile?.display_name ?? "You",
-                        activeProfile?.avatar_url ?? null,
-                        [],
-                        "friend-avatar border-preview-avatar",
-                        tier.unlockLevel,
-                        selectedBorderDraft
-                      )}
-                      <span>Lv {tier.unlockLevel}</span>
-                    </div>
-                  ))}
+                  {AVATAR_FRAME_TIERS.map((tier) => {
+                    const draft = normalizeSelectedAvatarBorder(selectedBorderDraft);
+                    const isUnlocked = stats.level >= tier.unlockLevel;
+                    const borderValue = serializeAvatarBorderSelection(draft.style, draft.color, tier.id);
+                    return (
+                      <button
+                        className={clsx(
+                          "frame-tier-chip",
+                          isUnlocked && "unlocked",
+                          draft.tierId === tier.id && "selected",
+                          !isUnlocked && "locked"
+                        )}
+                        disabled={!isUnlocked}
+                        key={tier.id}
+                        onClick={() => setSelectedBorderDraft(borderValue)}
+                        type="button"
+                      >
+                        {renderProfileAvatar(
+                          activeProfile?.display_name ?? "You",
+                          activeProfile?.avatar_url ?? null,
+                          [],
+                          "friend-avatar border-preview-avatar",
+                          stats.level,
+                          borderValue
+                        )}
+                        <span>Lv {tier.unlockLevel}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </section>
             </div>
             <div className="confirm-actions emblem-picker-actions">
               <button
                 className="secondary-button"
-                onClick={() => setSelectedBorderDraft(serializeAvatarBorderSelection("ring", "silver"))}
+                onClick={() => setSelectedBorderDraft(serializeAvatarBorderSelection("ring", "silver", null))}
                 type="button"
               >
                 Reset
@@ -1419,7 +1470,7 @@ export default function HomePage() {
           </div>
         </section>
       ) : null}
-      <main className="shell shell-dashboard">
+      <main className="shell shell-dashboard" data-app-theme={selectedTheme}>
       {error ? (
         <section className="message error status-banner">
           <strong>Something needs attention:</strong> {error}
@@ -1931,6 +1982,36 @@ export default function HomePage() {
               <section className="panel">
                 <div className="section-title-row">
                   <div>
+                    <p className="eyebrow">Theme</p>
+                    <h2>Customize app color</h2>
+                  </div>
+                </div>
+                <p className="muted">Pick a color accent for your app. Your choice saves to your account.</p>
+                <div className="theme-swatch-row" role="list" aria-label="App theme colors">
+                  {APP_THEMES.map((theme) => (
+                    <button
+                      aria-label={`Select ${theme.id} theme`}
+                      className={clsx("theme-swatch", selectedThemeDraft === theme.id && "selected")}
+                      key={theme.id}
+                      onClick={() => setSelectedThemeDraft(theme.id)}
+                      style={{ "--swatch-color": theme.hex } as React.CSSProperties}
+                      type="button"
+                    />
+                  ))}
+                </div>
+                <div className="account-theme-actions">
+                  <button className="secondary-button" onClick={() => setSelectedThemeDraft("sky")} type="button">
+                    Reset
+                  </button>
+                  <button className="primary-button" disabled={loading} onClick={() => void handleThemeSave()} type="button">
+                    {activeAction === "theme" ? "Saving..." : "Save theme"}
+                  </button>
+                </div>
+              </section>
+
+              <section className="panel">
+                <div className="section-title-row">
+                  <div>
                     <p className="eyebrow">Profile</p>
                     <h2>Change your name</h2>
                   </div>
@@ -2119,25 +2200,54 @@ export default function HomePage() {
                       </div>
                       <p className="muted friends-section-copy">Balanced using level, best send, and the last 30 days of activity so old volume does not dominate.</p>
                       <div className="leaderboard-list">
-                        {leaderboardEntries.map((entry, index) => (
-                          <article className={clsx("leaderboard-row", entry.isYou && "you")} key={entry.id}>
-                            <div className="leaderboard-rank">{index + 1}</div>
-                            {renderProfileAvatar(entry.name, entry.avatarUrl, entry.selectedEmblems, "friend-avatar", entry.level, entry.selectedAvatarBorder)}
-                            <div className="leaderboard-copy">
-                              <div className="friend-name-line">
-                                <strong>{entry.name}</strong>
-                                {entry.isYou ? <span className="mini-badge ready">You</span> : null}
-                              </div>
-                              <p className="muted friend-row-meta">
-                                Lv {entry.level} | PB {entry.personalBest} | {entry.recentSends30} sends in 30d
-                              </p>
-                            </div>
-                            <div className="leaderboard-score">
-                              <strong>{entry.score}</strong>
-                              <span>score</span>
-                            </div>
-                          </article>
-                        ))}
+                        {leaderboardEntries.map((entry, index) => {
+                          const isExpanded = expandedLeaderboardId === entry.id;
+                          return (
+                            <article className={clsx("leaderboard-row", entry.isYou && "you", isExpanded && "expanded")} key={entry.id}>
+                              <button
+                                className="leaderboard-main"
+                                onClick={() => setExpandedLeaderboardId((current) => (current === entry.id ? "" : entry.id))}
+                                type="button"
+                              >
+                                <div className="leaderboard-rank">{index + 1}</div>
+                                {renderProfileAvatar(entry.name, entry.avatarUrl, entry.selectedEmblems, "friend-avatar", entry.level, entry.selectedAvatarBorder)}
+                                <div className="leaderboard-copy">
+                                  <div className="friend-name-line">
+                                    <strong>{entry.name}</strong>
+                                    {entry.isYou ? <span className="mini-badge ready">You</span> : null}
+                                  </div>
+                                  <p className="muted friend-row-meta">
+                                    Lv {entry.level} | PB {entry.personalBest} | {entry.recentSends30} sends in 30d
+                                  </p>
+                                </div>
+                                <div className="leaderboard-score">
+                                  <strong>{entry.score}</strong>
+                                  <span>{isExpanded ? "hide" : "score"}</span>
+                                </div>
+                              </button>
+                              {isExpanded ? (
+                                <div className="leaderboard-breakdown">
+                                  <div className="leaderboard-breakdown-row">
+                                    <span>Level ({entry.level} x 100)</span>
+                                    <strong>{entry.breakdown.levelPoints}</strong>
+                                  </div>
+                                  <div className="leaderboard-breakdown-row">
+                                    <span>Personal best ({entry.personalBest})</span>
+                                    <strong>{entry.breakdown.personalBestPoints}</strong>
+                                  </div>
+                                  <div className="leaderboard-breakdown-row">
+                                    <span>Recent sends (max 12)</span>
+                                    <strong>{entry.breakdown.recentSendsPoints}</strong>
+                                  </div>
+                                  <div className="leaderboard-breakdown-row">
+                                    <span>Active days (max 8)</span>
+                                    <strong>{entry.breakdown.activeDaysPoints}</strong>
+                                  </div>
+                                </div>
+                              ) : null}
+                            </article>
+                          );
+                        })}
                       </div>
                     </section>
                   </div>
@@ -2572,7 +2682,7 @@ function renderProfileAvatar(
   selectedAvatarBorder?: string | null
 ) {
   const normalizedEmblems = (selectedEmblems ?? []).slice(0, 3);
-  const frameTier = getAvatarFrameTier(level);
+  const frameTier = resolveAvatarFrameTier(level, selectedAvatarBorder);
   const frameConfig = normalizeSelectedAvatarBorder(selectedAvatarBorder);
 
   return (

@@ -30,23 +30,39 @@ export const AVATAR_FRAME_TIERS = [
 
 export type AvatarFrameStyleId = (typeof AVATAR_FRAME_STYLES)[number]["id"];
 export type AvatarBorderColorId = (typeof AVATAR_BORDER_COLORS)[number]["id"];
+export type AvatarFrameTierId = (typeof AVATAR_FRAME_TIERS)[number]["id"];
 
 export function getAvatarFrameTier(level: number) {
   return AVATAR_FRAME_TIERS.reduce((current, tier) => (level >= tier.unlockLevel ? tier : current), AVATAR_FRAME_TIERS[0]);
 }
 
-export function serializeAvatarBorderSelection(style: AvatarFrameStyleId, color: AvatarBorderColorId) {
-  return `${style}:${color}`;
+export function serializeAvatarBorderSelection(style: AvatarFrameStyleId, color: AvatarBorderColorId, tierId?: AvatarFrameTierId | null) {
+  return `${style}:${color}:${tierId ?? ""}`;
 }
 
 export function normalizeSelectedAvatarBorder(selectedBorder: string | null | undefined) {
   const knownColors = new Set<string>(AVATAR_BORDER_COLORS.map((color) => color.id));
-  const [, maybeColor] = (selectedBorder ?? "").split(":");
+  const knownTiers = new Set<number>(AVATAR_FRAME_TIERS.map((tier) => tier.id));
+  const [, maybeColor, maybeTier] = (selectedBorder ?? "").split(":");
   const legacy = (selectedBorder ?? "").toLowerCase();
   const fallbackColor = knownColors.has(legacy) ? (legacy as AvatarBorderColorId) : ("silver" as AvatarBorderColorId);
+  const parsedTier = Number(maybeTier);
 
   return {
     style: "ring" as AvatarFrameStyleId,
-    color: knownColors.has(maybeColor) ? (maybeColor as AvatarBorderColorId) : fallbackColor
+    color: knownColors.has(maybeColor) ? (maybeColor as AvatarBorderColorId) : fallbackColor,
+    tierId: Number.isFinite(parsedTier) && knownTiers.has(parsedTier) ? (parsedTier as AvatarFrameTierId) : null
   };
+}
+
+export function resolveAvatarFrameTier(level: number, selectedBorder: string | null | undefined) {
+  const maxUnlockedTier = getAvatarFrameTier(level);
+  const config = normalizeSelectedAvatarBorder(selectedBorder);
+
+  if (config.tierId === null) {
+    return maxUnlockedTier;
+  }
+
+  const selectedTier = AVATAR_FRAME_TIERS.find((tier) => tier.id === config.tierId) ?? maxUnlockedTier;
+  return selectedTier.unlockLevel <= maxUnlockedTier.unlockLevel ? selectedTier : maxUnlockedTier;
 }

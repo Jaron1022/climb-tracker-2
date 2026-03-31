@@ -6,6 +6,7 @@ create table if not exists public.profiles (
   avatar_url text,
   selected_emblems text[] not null default '{}',
   selected_avatar_border text,
+  selected_theme text,
   device_id text not null default 'supabase-account',
   created_at timestamptz not null default timezone('utc'::text, now())
 );
@@ -18,6 +19,9 @@ add column if not exists selected_emblems text[] not null default '{}';
 
 alter table public.profiles
 add column if not exists selected_avatar_border text;
+
+alter table public.profiles
+add column if not exists selected_theme text;
 
 create table if not exists public.climbs (
   id uuid primary key default gen_random_uuid(),
