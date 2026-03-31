@@ -77,6 +77,66 @@ button {
   padding: 1.25rem;
 }
 
+.orientation-lock-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background:
+    radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--accent-2) 24%, transparent), transparent 32%),
+    radial-gradient(circle at 80% 30%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 38%),
+    linear-gradient(180deg, rgba(11, 16, 27, 0.98), rgba(11, 16, 27, 0.995));
+  backdrop-filter: blur(14px);
+}
+
+.orientation-lock-card {
+  width: min(100%, 24rem);
+  display: grid;
+  justify-items: center;
+  gap: 0.9rem;
+  text-align: center;
+  padding: 1.8rem 1.4rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent),
+    color-mix(in srgb, var(--surface) 92%, #0b1220);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+.orientation-lock-icon {
+  width: 4.4rem;
+  height: 4.4rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface-control));
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+.orientation-lock-phone {
+  width: 1.45rem;
+  height: 2.45rem;
+  border: 2px solid color-mix(in srgb, white 78%, var(--accent));
+  border-radius: 0.48rem;
+  position: relative;
+  transform: rotate(-90deg);
+}
+
+.orientation-lock-phone::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0.18rem;
+  width: 0.28rem;
+  height: 0.28rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, white 72%, var(--accent));
+  transform: translateX(-50%);
+}
+
 .shell-dashboard {
   padding-bottom: 7.5rem;
 }
@@ -136,9 +196,7 @@ button {
 .panel,
 .stat-card,
 .climb-card {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 42%),
-    var(--surface);
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
   backdrop-filter: blur(12px);
@@ -259,6 +317,7 @@ button {
 .history-view {
   display: grid;
   gap: 1rem;
+  padding-bottom: 6.5rem;
 }
 
 .friends-page {
@@ -267,11 +326,9 @@ button {
 }
 
 .friends-shell {
-  background:
-    radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 12%, transparent), transparent 30%),
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-control) 72%, var(--surface-strong)), color-mix(in srgb, var(--surface) 88%, #10151d));
-  border-color: color-mix(in srgb, var(--accent) 14%, var(--line));
-  box-shadow: var(--shadow-strong);
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  border-color: var(--line);
+  box-shadow: var(--shadow);
 }
 
 .friends-page .field input,
@@ -354,19 +411,13 @@ button {
   padding: 0.95rem 1rem;
   border: 1px solid var(--line);
   border-radius: 20px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 42%),
-    color-mix(in srgb, var(--surface-control) 96%, transparent);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 10px 24px rgba(0, 0, 0, 0.06);
+  background: color-mix(in srgb, var(--surface-control) 94%, transparent);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
 }
 
 .friend-row.selected {
   border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 14px 28px color-mix(in srgb, var(--accent) 12%, transparent);
+  box-shadow: 0 14px 28px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .friend-row-main {
@@ -470,16 +521,19 @@ button {
 
 .friend-row-chevron::before {
   content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
   width: 0.48rem;
   height: 0.48rem;
   border-right: 2px solid var(--accent-deep);
   border-bottom: 2px solid var(--accent-deep);
-  transform: rotate(-45deg);
+  transform: translate(-58%, -50%) rotate(-45deg);
   transition: transform 140ms ease;
 }
 
 .friend-row-chevron.expanded::before {
-  transform: rotate(45deg) translate(-1px, -1px);
+  transform: translate(-50%, -62%) rotate(45deg);
 }
 
 .friend-inline-details {
@@ -1674,15 +1728,13 @@ button {
   }
 
   .friends-shell {
-    background:
-      radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 14%, transparent), transparent 32%),
-      linear-gradient(180deg, color-mix(in srgb, var(--surface-control) 78%, var(--surface-strong)), color-mix(in srgb, var(--surface) 96%, #0c1219));
-    border-color: color-mix(in srgb, var(--accent) 16%, var(--line));
+    background: color-mix(in srgb, var(--surface) 96%, transparent);
+    border-color: var(--line);
   }
 
   .friend-row {
-    background: color-mix(in srgb, var(--surface-control) 92%, transparent);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    background: color-mix(in srgb, var(--surface-control) 94%, transparent);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
   }
 
   .friend-avatar {

@@ -83,6 +83,7 @@ export default function HomePage() {
   const [pendingOutgoingFriendIds, setPendingOutgoingFriendIds] = useState<string[]>([]);
   const [friendsTab, setFriendsTab] = useState<"discover" | "requests" | "circle">("circle");
   const [progressRange, setProgressRange] = useState<ProgressRange>("ALL");
+  const [isLandscapePhone, setIsLandscapePhone] = useState(false);
 
   const hydrateFriendState = useCallback(
     async (userId: string) => {
@@ -217,6 +218,24 @@ export default function HomePage() {
       setSelectedFriendId("");
     }
   }, [friends, selectedFriendId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const mediaQuery = window.matchMedia("(orientation: landscape) and (max-width: 960px) and (max-height: 640px)");
+    const syncLandscapeState = () => setIsLandscapePhone(mediaQuery.matches);
+
+    syncLandscapeState();
+    mediaQuery.addEventListener("change", syncLandscapeState);
+    window.addEventListener("resize", syncLandscapeState);
+
+    return () => {
+      mediaQuery.removeEventListener("change", syncLandscapeState);
+      window.removeEventListener("resize", syncLandscapeState);
+    };
+  }, []);
 
   useEffect(() => {
     if (!activeProfileId || activeView !== "friends") {
@@ -828,7 +847,20 @@ export default function HomePage() {
   }
 
   return (
-    <main className="shell shell-dashboard">
+    <>
+      {isLandscapePhone ? (
+        <section className="orientation-lock-screen" role="dialog" aria-live="polite" aria-label="Rotate device to continue">
+          <div className="orientation-lock-card">
+            <div className="orientation-lock-icon" aria-hidden="true">
+              <span className="orientation-lock-phone" />
+            </div>
+            <p className="eyebrow">Portrait only</p>
+            <h1>Rotate your phone back upright</h1>
+            <p className="muted">This app is set up for portrait use so the dashboard and climb form stay easy to read.</p>
+          </div>
+        </section>
+      ) : null}
+      <main className="shell shell-dashboard">
       {error ? (
         <section className="message error status-banner">
           <strong>Something needs attention:</strong> {error}
@@ -1829,7 +1861,8 @@ export default function HomePage() {
           </nav>
         </>
       )}
-    </main>
+      </main>
+    </>
   );
 }
 
