@@ -1307,6 +1307,7 @@ export default function HomePage() {
                     <h2>Add a friend</h2>
                   </div>
                 </div>
+                <p className="muted friends-section-copy">Search by climber name, send a request, and start sharing sends with your circle.</p>
                 <label className="field">
                   <span>Search by climber name</span>
                   <input
@@ -1329,9 +1330,12 @@ export default function HomePage() {
 
                       return (
                         <article className="friend-row" key={result.id}>
-                          <div>
-                            <strong>{result.display_name}</strong>
-                            <p className="muted friend-row-meta">Tap below to send a friend request.</p>
+                          <div className="friend-row-main">
+                            <div className="friend-avatar">{initialsForName(result.display_name)}</div>
+                            <div>
+                              <strong>{result.display_name}</strong>
+                              <p className="muted friend-row-meta">Tap below to send a friend request.</p>
+                            </div>
                           </div>
                           <button
                             className="secondary-button"
@@ -1362,9 +1366,12 @@ export default function HomePage() {
                   <div className="friends-list">
                     {incomingRequests.map((request) => (
                       <article className="friend-row" key={request.friendshipId}>
-                        <div>
-                          <strong>{request.requesterName}</strong>
-                          <p className="muted friend-row-meta">Requested {prettyDate(request.createdAt)}</p>
+                        <div className="friend-row-main">
+                          <div className="friend-avatar">{initialsForName(request.requesterName)}</div>
+                          <div>
+                            <strong>{request.requesterName}</strong>
+                            <p className="muted friend-row-meta">Requested {prettyDate(request.createdAt)}</p>
+                          </div>
                         </div>
                         <div className="friend-row-actions">
                           <button
@@ -1404,9 +1411,12 @@ export default function HomePage() {
                   <div className="friends-list">
                     {friends.map((friend) => (
                       <article className="friend-row" key={friend.friendshipId}>
-                        <div>
-                          <strong>{friend.friendName}</strong>
-                          <p className="muted friend-row-meta">Connected {prettyDate(friend.createdAt)}</p>
+                        <div className="friend-row-main">
+                          <div className="friend-avatar">{initialsForName(friend.friendName)}</div>
+                          <div>
+                            <strong>{friend.friendName}</strong>
+                            <p className="muted friend-row-meta">Connected {prettyDate(friend.createdAt)}</p>
+                          </div>
                         </div>
                         <button
                           className="delete-button"
@@ -1758,4 +1768,13 @@ function getColorChipClass(value: string) {
   }
 
   return "";
+}
+
+function initialsForName(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("") || "?";
 }
