@@ -518,30 +518,64 @@ button {
 .profile-emblem-row {
   position: absolute;
   left: 50%;
-  bottom: -0.35rem;
+  bottom: -0.42rem;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 0.18rem;
 }
 
+.profile-emblem-row .emblem-badge:nth-child(1) {
+  transform: translateY(0.16rem) rotate(-8deg);
+}
+
+.profile-emblem-row .emblem-badge:nth-child(2) {
+  transform: translateY(0);
+}
+
+.profile-emblem-row .emblem-badge:nth-child(3) {
+  transform: translateY(0.16rem) rotate(8deg);
+}
+
 .emblem-badge {
-  display: grid;
-  place-items: center;
-  border: 2px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.18);
-  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  color: #ffffff;
-  clip-path: polygon(25% 6%, 75% 6%, 94% 50%, 75% 94%, 25% 94%, 6% 50%);
+  position: relative;
+    display: grid;
+    place-items: center;
+  overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.18);
+    font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: #ffffff;
+}
+
+.emblem-badge::before,
+.emblem-badge::after {
+  content: "";
+  position: absolute;
+  inset: 0.18rem;
+  pointer-events: none;
+  opacity: 0.44;
+}
+
+.emblem-badge::before {
+  border: 1px solid rgba(255, 255, 255, 0.34);
+}
+
+.emblem-badge::after {
+  inset: 0.34rem;
+  opacity: 0;
+  border: 1px solid rgba(255, 255, 255, 0.24);
 }
 
 .emblem-inner {
-  width: 70%;
-  height: 70%;
-  display: grid;
-  place-items: center;
+  position: relative;
+  z-index: 1;
+    width: 70%;
+    height: 70%;
+    display: grid;
+    place-items: center;
 }
 
 .emblem-icon {
@@ -550,15 +584,117 @@ button {
 }
 
 .emblem-badge.small {
-  width: 1rem;
-  height: 1rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-width: 1px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.16);
   font-size: 0.38rem;
 }
 
 .emblem-badge.large {
-  width: 3.25rem;
-  height: 3.25rem;
-  font-size: 0.9rem;
+    width: 3.25rem;
+    height: 3.25rem;
+    font-size: 0.9rem;
+}
+
+.emblem-badge.small::before {
+  inset: 0.11rem;
+}
+
+.emblem-badge.small::after {
+  inset: 0.22rem;
+}
+
+.emblem-family-milestone,
+.emblem-family-volume {
+  clip-path: polygon(25% 6%, 75% 6%, 94% 50%, 75% 94%, 25% 94%, 6% 50%);
+}
+
+.emblem-family-milestone::before,
+.emblem-family-volume::before,
+.emblem-family-milestone::after,
+.emblem-family-volume::after {
+  clip-path: polygon(25% 6%, 75% 6%, 94% 50%, 75% 94%, 25% 94%, 6% 50%);
+}
+
+.emblem-family-grade,
+.emblem-family-level {
+  clip-path: polygon(50% 3%, 88% 18%, 96% 58%, 70% 95%, 30% 95%, 4% 58%, 12% 18%);
+}
+
+.emblem-family-grade::before,
+.emblem-family-level::before,
+.emblem-family-grade::after,
+.emblem-family-level::after {
+  clip-path: polygon(50% 3%, 88% 18%, 96% 58%, 70% 95%, 30% 95%, 4% 58%, 12% 18%);
+}
+
+.emblem-family-style,
+.emblem-family-movement {
+  clip-path: polygon(50% 2%, 90% 50%, 50% 98%, 10% 50%);
+}
+
+.emblem-family-style::before,
+.emblem-family-movement::before,
+.emblem-family-style::after,
+.emblem-family-movement::after {
+  clip-path: polygon(50% 2%, 90% 50%, 50% 98%, 10% 50%);
+}
+
+.emblem-family-flash {
+  clip-path: polygon(50% 1%, 68% 16%, 92% 14%, 86% 40%, 99% 60%, 75% 68%, 70% 96%, 50% 82%, 30% 96%, 25% 68%, 1% 60%, 14% 40%, 8% 14%, 32% 16%);
+}
+
+.emblem-family-flash::before,
+.emblem-family-flash::after {
+  clip-path: polygon(50% 1%, 68% 16%, 92% 14%, 86% 40%, 99% 60%, 75% 68%, 70% 96%, 50% 82%, 30% 96%, 25% 68%, 1% 60%, 14% 40%, 8% 14%, 32% 16%);
+}
+
+.emblem-family-color {
+  clip-path: circle(48% at 50% 50%);
+}
+
+.emblem-family-color::before,
+.emblem-family-color::after {
+  clip-path: circle(48% at 50% 50%);
+}
+
+.emblem-family-consistency {
+  clip-path: polygon(16% 7%, 84% 7%, 94% 22%, 94% 78%, 84% 93%, 16% 93%, 6% 78%, 6% 22%);
+}
+
+.emblem-family-consistency::before,
+.emblem-family-consistency::after {
+  clip-path: polygon(16% 7%, 84% 7%, 94% 22%, 94% 78%, 84% 93%, 16% 93%, 6% 78%, 6% 22%);
+}
+
+.emblem-family-mastery {
+  clip-path: polygon(50% 1%, 63% 19%, 85% 14%, 81% 37%, 98% 50%, 81% 63%, 85% 86%, 63% 81%, 50% 99%, 37% 81%, 15% 86%, 19% 63%, 2% 50%, 19% 37%, 15% 14%, 37% 19%);
+}
+
+.emblem-family-mastery::before,
+.emblem-family-mastery::after {
+  clip-path: polygon(50% 1%, 63% 19%, 85% 14%, 81% 37%, 98% 50%, 81% 63%, 85% 86%, 63% 81%, 50% 99%, 37% 81%, 15% 86%, 19% 63%, 2% 50%, 19% 37%, 15% 14%, 37% 19%);
+}
+
+.emblem-tier-2::before {
+  opacity: 0.56;
+}
+
+.emblem-tier-2 .emblem-inner {
+  transform: scale(0.93);
+}
+
+.emblem-tier-3::before {
+  opacity: 0.64;
+}
+
+.emblem-tier-3::after {
+  opacity: 0.42;
+}
+
+.emblem-tier-3 .emblem-inner {
+  transform: scale(0.88);
 }
 
 .emblem-tone-gold { background: linear-gradient(180deg, #f8d46e, #c58a1d); }
@@ -1279,6 +1415,7 @@ button {
 .emblem-picker-modal {
   width: min(100%, 36rem);
   display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
   gap: 1rem;
   padding: 1.2rem;
   max-height: min(84vh, 48rem);
@@ -1306,7 +1443,11 @@ button {
 .emblem-picker-scroll {
   display: grid;
   gap: 1rem;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   padding-right: 0.2rem;
 }
 

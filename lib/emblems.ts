@@ -2,31 +2,32 @@ import { buildStats } from "./stats";
 import type { ClimbRow } from "./types";
 
 export const EMBLEM_DEFINITIONS = [
-  { id: "first_send", name: "First Send", icon: "flag", tone: "gold", description: "Log your first completed climb." },
-  { id: "flash_start", name: "Flash Start", icon: "bolt", tone: "teal", description: "Log your first flash." },
-  { id: "volume_25", name: "Volume 25", icon: "stack", tone: "blue", description: "Complete 25 climbs." },
-  { id: "volume_100", name: "Century Club", icon: "crown", tone: "violet", description: "Complete 100 climbs." },
-  { id: "volume_250", name: "Mileage Monster", icon: "medal", tone: "sunset", description: "Complete 250 climbs." },
-  { id: "v3_breaker", name: "V3 Breaker", icon: "peak", tone: "red", description: "Send a V3 or harder." },
-  { id: "v5_hunter", name: "V5 Hunter", icon: "peak", tone: "orange", description: "Send a V5 or harder." },
-  { id: "v7_legend", name: "V7 Legend", icon: "star", tone: "pink", description: "Send a V7 or harder." },
-  { id: "level_10", name: "Level 10", icon: "shield", tone: "indigo", description: "Reach level 10." },
-  { id: "level_20", name: "Level 20", icon: "shield", tone: "emerald", description: "Reach level 20." },
-  { id: "slab_sage", name: "Slab Sage", icon: "triangle", tone: "mint", description: "Log 10 slab climbs." },
-  { id: "roof_raider", name: "Roof Raider", icon: "roof", tone: "indigo", description: "Log 8 roof or overhang climbs." },
-  { id: "crimp_crafter", name: "Crimp Crafter", icon: "diamond", tone: "cyan", description: "Log 10 crimpy climbs." },
-  { id: "pocket_ace", name: "Pocket Ace", icon: "ring", tone: "silver", description: "Log 8 pocket climbs." },
-  { id: "undercling_engine", name: "Undercling Engine", icon: "arrow-up", tone: "blue", description: "Log 8 undercling climbs." },
-  { id: "dynamic_driver", name: "Dynamic Driver", icon: "comet", tone: "red", description: "Log 8 dynamic climbs." },
-  { id: "static_control", name: "Static Control", icon: "plus", tone: "mint", description: "Log 8 static climbs." },
-  { id: "flash_machine", name: "Flash Machine", icon: "bolt", tone: "lime", description: "Flash 10 climbs." },
-  { id: "rainbow_run", name: "Rainbow Run", icon: "spark", tone: "sunset", description: "Log 5 different climb colors." },
-  { id: "show_up", name: "Show Up", icon: "calendar", tone: "silver", description: "Climb on 8 different days in the last 30 days." },
-  { id: "all_rounder", name: "All-Rounder", icon: "compass", tone: "emerald", description: "Log climbs across 6 different style tags." }
+  { id: "first_send", name: "First Send", icon: "flag", tone: "gold", family: "milestone", tier: 1, description: "Log your first completed climb." },
+  { id: "flash_start", name: "Flash Start", icon: "bolt", tone: "teal", family: "flash", tier: 1, description: "Log your first flash." },
+  { id: "volume_25", name: "Volume 25", icon: "stack", tone: "blue", family: "volume", tier: 1, description: "Complete 25 climbs." },
+  { id: "volume_100", name: "Century Club", icon: "crown", tone: "violet", family: "volume", tier: 2, description: "Complete 100 climbs." },
+  { id: "volume_250", name: "Mileage Monster", icon: "medal", tone: "sunset", family: "volume", tier: 3, description: "Complete 250 climbs." },
+  { id: "v3_breaker", name: "V3 Breaker", icon: "peak", tone: "red", family: "grade", tier: 1, description: "Send a V3 or harder." },
+  { id: "v5_hunter", name: "V5 Hunter", icon: "peak", tone: "orange", family: "grade", tier: 2, description: "Send a V5 or harder." },
+  { id: "v7_legend", name: "V7 Legend", icon: "star", tone: "pink", family: "grade", tier: 3, description: "Send a V7 or harder." },
+  { id: "level_10", name: "Level 10", icon: "shield", tone: "indigo", family: "level", tier: 1, description: "Reach level 10." },
+  { id: "level_20", name: "Level 20", icon: "shield", tone: "emerald", family: "level", tier: 2, description: "Reach level 20." },
+  { id: "slab_sage", name: "Slab Sage", icon: "triangle", tone: "mint", family: "style", tier: 1, description: "Log 10 slab climbs." },
+  { id: "roof_raider", name: "Roof Raider", icon: "roof", tone: "indigo", family: "style", tier: 1, description: "Log 8 roof or overhang climbs." },
+  { id: "crimp_crafter", name: "Crimp Crafter", icon: "diamond", tone: "cyan", family: "style", tier: 1, description: "Log 10 crimpy climbs." },
+  { id: "pocket_ace", name: "Pocket Ace", icon: "ring", tone: "silver", family: "style", tier: 1, description: "Log 8 pocket climbs." },
+  { id: "undercling_engine", name: "Undercling Engine", icon: "arrow-up", tone: "blue", family: "style", tier: 1, description: "Log 8 undercling climbs." },
+  { id: "dynamic_driver", name: "Dynamic Driver", icon: "comet", tone: "red", family: "movement", tier: 1, description: "Log 8 dynamic climbs." },
+  { id: "static_control", name: "Static Control", icon: "plus", tone: "mint", family: "movement", tier: 1, description: "Log 8 static climbs." },
+  { id: "flash_machine", name: "Flash Machine", icon: "bolt", tone: "lime", family: "flash", tier: 2, description: "Flash 10 climbs." },
+  { id: "rainbow_run", name: "Rainbow Run", icon: "spark", tone: "sunset", family: "color", tier: 1, description: "Log 5 different climb colors." },
+  { id: "show_up", name: "Show Up", icon: "calendar", tone: "silver", family: "consistency", tier: 1, description: "Climb on 8 different days in the last 30 days." },
+  { id: "all_rounder", name: "All-Rounder", icon: "compass", tone: "emerald", family: "mastery", tier: 1, description: "Log climbs across 6 different style tags." }
 ] as const;
 
 export type EmblemId = (typeof EMBLEM_DEFINITIONS)[number]["id"];
 export type EmblemTone = (typeof EMBLEM_DEFINITIONS)[number]["tone"];
+export type EmblemFamily = (typeof EMBLEM_DEFINITIONS)[number]["family"];
 
 export function getUnlockedEmblems(climbs: ClimbRow[]) {
   const stats = buildStats(climbs);

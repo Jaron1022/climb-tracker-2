@@ -2365,7 +2365,16 @@ function renderEmblemBadge(emblemId: string, size: "small" | "large") {
   }
 
   return (
-    <div className={clsx("emblem-badge", `emblem-tone-${emblem.tone}`, size === "small" ? "small" : "large")} key={`${emblem.id}-${size}`}>
+    <div
+      className={clsx(
+        "emblem-badge",
+        `emblem-tone-${emblem.tone}`,
+        `emblem-family-${emblem.family}`,
+        `emblem-tier-${emblem.tier}`,
+        size === "small" ? "small" : "large"
+      )}
+      key={`${emblem.id}-${size}`}
+    >
       <div className="emblem-inner">{renderEmblemIcon(emblem.icon)}</div>
     </div>
   );
