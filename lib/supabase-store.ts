@@ -29,10 +29,12 @@ export function subscribeToAuthChanges(callback: (user: User | null, event?: str
 
 export async function signUpWithEmail(email: string, password: string, displayName: string) {
   const supabase = getSupabaseBrowserClient() as any;
+  const emailRedirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
+      emailRedirectTo,
       data: {
         display_name: displayName
       }
