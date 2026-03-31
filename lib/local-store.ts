@@ -20,6 +20,7 @@ export async function createProfile(displayName: string) {
   const profile: ProfileRow = {
     id: makeId(),
     display_name: displayName,
+    avatar_url: null,
     device_id: "local-device",
     created_at: new Date().toISOString()
   };

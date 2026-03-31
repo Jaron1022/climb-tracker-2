@@ -28,6 +28,7 @@ import {
   signOutUser,
   signUpWithEmail,
   subscribeToAuthChanges,
+  updateProfileAvatar,
   updateDisplayName,
   updateClimbForUser
 } from "@/lib/supabase-store";
@@ -57,15 +58,17 @@ export default function HomePage() {
   const [accountDisplayName, setAccountDisplayName] = useState("");
   const [form, setForm] = useState(DEFAULT_FORM);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [selectedFriendId, setSelectedFriendId] = useState("");
   const photoInputRef = useRef<HTMLInputElement | null>(null);
   const cameraCaptureInputRef = useRef<HTMLInputElement | null>(null);
   const cameraButtonRef = useRef<HTMLButtonElement | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const historyTopRef = useRef<HTMLElement | null>(null);
   const [loading, setLoading] = useState(false);
   const [booting, setBooting] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [activeAction, setActiveAction] = useState<"auth" | "rename" | "logout" | "account-delete" | "climb" | "edit" | "load" | "delete" | "">("");
+  const [activeAction, setActiveAction] = useState<"auth" | "rename" | "avatar" | "logout" | "account-delete" | "climb" | "edit" | "load" | "delete" | "">("");
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
   const [climbPendingDelete, setClimbPendingDelete] = useState<ClimbRow | null>(null);
   const [editingClimb, setEditingClimb] = useState<ClimbRow | null>(null);
@@ -80,6 +83,7 @@ export default function HomePage() {
   const [friends, setFriends] = useState<FriendSummary[]>([]);
   const [friendFeed, setFriendFeed] = useState<FriendFeedClimb[]>([]);
   const [pendingOutgoingFriendIds, setPendingOutgoingFriendIds] = useState<string[]>([]);
+  const [friendsTab, setFriendsTab] = useState<"discover" | "requests" | "circle">("circle");
   const [progressRange, setProgressRange] = useState<ProgressRange>("ALL");
 
   const hydrateFriendState = useCallback(
@@ -193,6 +197,17 @@ export default function HomePage() {
   useEffect(() => {
     setHistoryVisibleCount(20);
   }, [historyGradeFilter, historyTagQuery]);
+
+  useEffect(() => {
+    if (friends.length === 0) {
+      setSelectedFriendId("");
+      return;
+    }
+
+    if (!friends.some((friend) => friend.friendId === selectedFriendId)) {
+      setSelectedFriendId(friends[0].friendId);
+    }
+  }, [friends, selectedFriendId]);
 
   useEffect(() => {
     if (!activeProfileId || activeView !== "friends") {
@@ -319,6 +334,41 @@ export default function HomePage() {
     } finally {
       setLoading(false);
       setActiveAction("");
+    }
+  }
+
+  async function handleAvatarChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const selected = event.target.files?.[0] ?? null;
+
+    if (!selected || !activeProfileId) {
+      return;
+    }
+
+    if (!selected.type.startsWith("image/")) {
+      setError("Please choose an image file for your profile photo.");
+      setSuccess("");
+      event.target.value = "";
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setActiveAction("avatar");
+      setError("");
+      setSuccess("");
+
+      const avatarUrl = await uploadPhoto(selected);
+      const updatedProfile = await updateProfileAvatar(activeProfileId, avatarUrl);
+      setActiveProfile(updatedProfile);
+      setAccountDisplayName(updatedProfile.display_name);
+      await refreshFriendsView();
+      setSuccess("Profile photo updated.");
+    } catch (err) {
+      setError(getMessage(err));
+    } finally {
+      setLoading(false);
+      setActiveAction("");
+      event.target.value = "";
     }
   }
 
@@ -505,6 +555,10 @@ export default function HomePage() {
   const visibleHistoryClimbs = filteredClimbs.slice(0, historyVisibleCount);
   const hasMoreHistory = filteredClimbs.length > historyVisibleCount;
   const canSaveClimb = Boolean(activeProfileId) && !loading && !booting;
+  const selectedFriend = useMemo(
+    () => friends.find((friend) => friend.friendId === selectedFriendId) ?? friends[0] ?? null,
+    [friends, selectedFriendId]
+  );
   const selectedGradeCounts = progressRange === "ALL" ? stats.completedByGrade : progressStats.completedByGrade;
   const selectedGradeMax = useMemo(
     () => Math.max(1, ...CLIMB_GRADES.map((grade) => selectedGradeCounts[grade] ?? 0)),
@@ -1244,6 +1298,29 @@ export default function HomePage() {
                   </div>
                 </div>
 
+                <div className="account-profile-hero">
+                  {renderProfileAvatar(activeProfile.display_name, activeProfile.avatar_url, "account-avatar account-avatar-large")}
+                  <div className="account-profile-copy">
+                    <strong>{activeProfile.display_name}</strong>
+                    <p className="muted">Your photo shows up in Friends and helps your circle recognize you faster.</p>
+                    <input
+                      accept="image/*"
+                      className="hidden-file-input"
+                      onChange={handleAvatarChange}
+                      ref={avatarInputRef}
+                      type="file"
+                    />
+                    <button
+                      className="secondary-button"
+                      disabled={loading}
+                      onClick={() => avatarInputRef.current?.click()}
+                      type="button"
+                    >
+                      {activeAction === "avatar" ? "Uploading..." : activeProfile.avatar_url ? "Change profile photo" : "Add profile photo"}
+                    </button>
+                  </div>
+                </div>
+
                 <div className="account-summary">
                   <div className="account-line">
                     <span>Email</span>
@@ -1315,190 +1392,246 @@ export default function HomePage() {
           ) : null}
 
           {activeView === "friends" ? (
-            <section className="friends-grid">
-              <section className="panel">
-                <div className="section-title-row">
-                  <div>
-                    <p className="eyebrow">Find climbers</p>
-                    <h2>Add a friend</h2>
-                  </div>
-                  <button className="secondary-button friend-demo-button" disabled={loading} onClick={() => void handleCreateDemoFriend()} type="button">
-                    Add demo friend
-                  </button>
-                </div>
-                <p className="muted friends-section-copy">Search by climber name, send a request, and start sharing sends with your circle.</p>
-                <label className="field">
-                  <span>Search by climber name</span>
-                  <input
-                    type="search"
-                    placeholder="Search display names..."
-                    value={friendSearch}
-                    onChange={(event) => setFriendSearch(event.target.value)}
-                  />
-                </label>
-                <div className="friends-search-results">
-                  {friendSearch.trim().length === 0 ? (
-                    <p className="empty-copy">Search for a climber by display name to send a friend request.</p>
-                  ) : friendResults.length === 0 ? (
-                    <p className="empty-copy">No climbers matched that search yet.</p>
-                  ) : (
-                    friendResults.map((result) => {
-                      const alreadyFriends = friends.some((friend) => friend.friendId === result.id);
-                      const alreadyIncoming = incomingRequests.some((request) => request.requesterId === result.id);
-                      const alreadyPending = pendingOutgoingFriendIds.includes(result.id);
-
-                      return (
-                        <article className="friend-row" key={result.id}>
-                          <div className="friend-row-main">
-                            <div className="friend-avatar">{initialsForName(result.display_name)}</div>
-                            <div>
-                              <strong>{result.display_name}</strong>
-                              <p className="muted friend-row-meta">Tap below to send a friend request.</p>
-                            </div>
-                          </div>
-                          <button
-                            className="secondary-button"
-                            disabled={loading || alreadyFriends || alreadyIncoming || alreadyPending}
-                            onClick={() => void handleSendFriendRequest(result.id)}
-                            type="button"
-                          >
-                            {alreadyFriends ? "Friends" : alreadyIncoming ? "Requested you" : alreadyPending ? "Pending" : "Add friend"}
-                          </button>
-                        </article>
-                      );
-                    })
-                  )}
-                </div>
-              </section>
-
-              <section className="panel">
-                <div className="section-title-row">
-                  <div>
-                    <p className="eyebrow">Requests</p>
-                    <h2>Incoming</h2>
-                  </div>
-                  <span className="badge">{incomingRequests.length}</span>
-                </div>
-                {incomingRequests.length === 0 ? (
-                  <p className="empty-copy">No incoming requests right now.</p>
-                ) : (
-                  <div className="friends-list">
-                    {incomingRequests.map((request) => (
-                      <article className="friend-row" key={request.friendshipId}>
-                        <div className="friend-row-main">
-                          <div className="friend-avatar">{initialsForName(request.requesterName)}</div>
-                          <div>
-                            <strong>{request.requesterName}</strong>
-                            <p className="muted friend-row-meta">Requested {prettyDate(request.createdAt)}</p>
-                          </div>
-                        </div>
-                        <div className="friend-row-actions">
-                          <button
-                            className="primary-button friend-action-button"
-                            disabled={loading}
-                            onClick={() => void handleFriendRequestResponse(request.friendshipId, "accepted")}
-                            type="button"
-                          >
-                            Accept
-                          </button>
-                          <button
-                            className="secondary-button friend-action-button"
-                            disabled={loading}
-                            onClick={() => void handleFriendRequestResponse(request.friendshipId, "declined")}
-                            type="button"
-                          >
-                            Decline
-                          </button>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              <section className="panel">
+            <section className="friends-page">
+              <section className="panel friends-shell">
                 <div className="section-title-row">
                   <div>
                     <p className="eyebrow">Friends</p>
-                    <h2>Your circle</h2>
+                    <h2>{friendsTab === "discover" ? "Find climbers" : friendsTab === "requests" ? "Requests" : "Your circle"}</h2>
                   </div>
-                  <span className="badge">{friends.length}</span>
+                  {friendsTab === "discover" ? (
+                    <button className="secondary-button friend-demo-button" disabled={loading} onClick={() => void handleCreateDemoFriend()} type="button">
+                      Add demo friend
+                    </button>
+                  ) : null}
                 </div>
-                {friends.length === 0 ? (
-                  <p className="empty-copy">Once requests are accepted, your friends will show up here.</p>
-                ) : (
-                  <div className="friends-list">
-                    {friends.map((friend) => (
-                      <article className="friend-row" key={friend.friendshipId}>
-                        <div className="friend-row-main">
-                          <div className="friend-avatar">{initialsForName(friend.friendName)}</div>
-                          <div>
-                            <strong>{friend.friendName}</strong>
-                            <p className="muted friend-row-meta">Connected {prettyDate(friend.createdAt)}</p>
-                          </div>
-                        </div>
-                        <button
-                          className="delete-button"
-                          disabled={loading}
-                          onClick={() => void handleRemoveFriend(friend.friendshipId)}
-                          type="button"
-                        >
-                          Remove
-                        </button>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </section>
 
-              <section className="panel">
-                <div className="section-title-row">
-                  <div>
-                    <p className="eyebrow">Feed</p>
-                    <h2>Recent friend climbs</h2>
-                  </div>
+                <div className="friends-tab-row" role="tablist" aria-label="Friends sections">
+                  <button className={clsx("friends-tab", friendsTab === "discover" && "active")} onClick={() => setFriendsTab("discover")} type="button">
+                    Discover
+                  </button>
+                  <button className={clsx("friends-tab", friendsTab === "requests" && "active")} onClick={() => setFriendsTab("requests")} type="button">
+                    Requests
+                    {incomingRequests.length > 0 ? <span className="friends-tab-count">{incomingRequests.length}</span> : null}
+                  </button>
+                  <button className={clsx("friends-tab", friendsTab === "circle" && "active")} onClick={() => setFriendsTab("circle")} type="button">
+                    Circle
+                    <span className="friends-tab-count">{friends.length}</span>
+                  </button>
                 </div>
-                {friendFeed.length === 0 ? (
-                  <p className="empty-copy">Accepted friends will start showing up here once they log climbs.</p>
-                ) : (
-                  <div className="feed friend-feed">
-                    {friendFeed.map((climb) => (
-                      <article className="climb-card" key={climb.id}>
-                        {climb.photo_url ? (
-                          <button className="thumbnail-button" onClick={() => setSelectedPhotoUrl(climb.photo_url)} type="button">
-                            <img alt={`${climb.grade} climb by ${climb.friend_name}`} className="climb-photo" src={climb.photo_url} />
-                          </button>
-                        ) : null}
-                        <div className="climb-content">
-                          <div className="section-title-row">
-                            <div>
-                              <p className="eyebrow">{climb.friend_name}</p>
-                              <div className="history-title-row">
-                                <h3>
-                                  {climb.grade}
-                                  {climb.grade_modifier ?? ""}
-                                </h3>
-                                {climb.wall_name ? (
-                                  <span className={clsx("history-description", getColorChipClass(climb.wall_name))}>{climb.wall_name}</span>
-                                ) : null}
+
+                {friendsTab === "discover" ? (
+                  <div className="friends-tab-panel">
+                    <p className="muted friends-section-copy">Search by climber name, send a request, and start sharing sends with your circle.</p>
+                    <label className="field">
+                      <span>Search by climber name</span>
+                      <input
+                        type="search"
+                        placeholder="Search display names..."
+                        value={friendSearch}
+                        onChange={(event) => setFriendSearch(event.target.value)}
+                      />
+                    </label>
+                    <div className="friends-search-results">
+                      {friendSearch.trim().length === 0 ? (
+                        <p className="empty-copy">Search for a climber by display name to send a friend request.</p>
+                      ) : friendResults.length === 0 ? (
+                        <p className="empty-copy">No climbers matched that search yet.</p>
+                      ) : (
+                        friendResults.map((result) => {
+                          const alreadyFriends = friends.some((friend) => friend.friendId === result.id);
+                          const alreadyIncoming = incomingRequests.some((request) => request.requesterId === result.id);
+                          const alreadyPending = pendingOutgoingFriendIds.includes(result.id);
+
+                          return (
+                            <article className="friend-row" key={result.id}>
+                              <div className="friend-row-main">
+                                {renderProfileAvatar(result.display_name, result.avatar_url, "friend-avatar")}
+                                <div>
+                                  <strong>{result.display_name}</strong>
+                                  <p className="muted friend-row-meta">Tap below to send a friend request.</p>
+                                </div>
                               </div>
-                              <p className="muted history-meta">{prettyDate(climb.climbed_on)}</p>
+                              <button
+                                className="secondary-button"
+                                disabled={loading || alreadyFriends || alreadyIncoming || alreadyPending}
+                                onClick={() => void handleSendFriendRequest(result.id)}
+                                type="button"
+                              >
+                                {alreadyFriends ? "Friends" : alreadyIncoming ? "Requested you" : alreadyPending ? "Pending" : "Add friend"}
+                              </button>
+                            </article>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+
+                {friendsTab === "requests" ? (
+                  <div className="friends-tab-panel">
+                    {incomingRequests.length === 0 ? (
+                      <p className="empty-copy">No incoming requests right now.</p>
+                    ) : (
+                      <div className="friends-list">
+                        {incomingRequests.map((request) => (
+                          <article className="friend-row" key={request.friendshipId}>
+                            <div className="friend-row-main">
+                              <div className="friend-avatar">{initialsForName(request.requesterName)}</div>
+                              <div>
+                                <strong>{request.requesterName}</strong>
+                                <p className="muted friend-row-meta">Requested {prettyDate(request.createdAt)}</p>
+                              </div>
+                            </div>
+                            <div className="friend-row-actions">
+                              <button
+                                className="primary-button friend-action-button"
+                                disabled={loading}
+                                onClick={() => void handleFriendRequestResponse(request.friendshipId, "accepted")}
+                                type="button"
+                              >
+                                Accept
+                              </button>
+                              <button
+                                className="secondary-button friend-action-button"
+                                disabled={loading}
+                                onClick={() => void handleFriendRequestResponse(request.friendshipId, "declined")}
+                                type="button"
+                              >
+                                Decline
+                              </button>
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+
+                {friendsTab === "circle" ? (
+                  <div className="friends-tab-panel friends-circle-layout">
+                    <section className="friends-circle-panel">
+                      {selectedFriend ? (
+                        <article className="friend-spotlight">
+                          <div className="section-title-row friend-spotlight-header">
+                            <div>
+                              <p className="eyebrow">Circle spotlight</p>
+                              <h3>{selectedFriend.friendName}</h3>
+                            </div>
+                            <span className="friend-level-badge friend-spotlight-level">Lv {selectedFriend.level}</span>
+                          </div>
+                          <div className="friend-spotlight-main">
+                            {renderProfileAvatar(selectedFriend.friendName, selectedFriend.avatarUrl, "account-avatar friend-spotlight-avatar")}
+                            <div className="friend-spotlight-copy">
+                              <p className="muted">Connected {prettyDate(selectedFriend.createdAt)}</p>
+                              <div className="friend-spotlight-stats">
+                                <div className="friend-spotlight-stat">
+                                  <span>Total sends</span>
+                                  <strong>{selectedFriend.totalSends}</strong>
+                                </div>
+                                <div className="friend-spotlight-stat">
+                                  <span>Personal best</span>
+                                  <strong>{selectedFriend.personalBest}</strong>
+                                </div>
+                              </div>
                             </div>
                           </div>
-                          <div className="tag-row">
-                            {climb.flashed ? <span className="mini-badge ready">flash</span> : null}
-                            {climb.style_tags.map((tag) => (
-                              <span className="mini-badge" key={tag}>
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                          {climb.notes ? <p>{climb.notes}</p> : null}
+                        </article>
+                      ) : null}
+
+                      <div className="section-title-row">
+                        <div>
+                          <p className="eyebrow">Friends</p>
+                          <h3>Your people</h3>
                         </div>
-                      </article>
-                    ))}
+                      </div>
+                      {friends.length === 0 ? (
+                        <p className="empty-copy">Once requests are accepted, your friends will show up here.</p>
+                      ) : (
+                        <div className="friends-list">
+                          {friends.map((friend) => (
+                            <article className={clsx("friend-row", selectedFriendId === friend.friendId && "selected")} key={friend.friendshipId}>
+                              <div className="friend-row-main">
+                                <button
+                                  className="friend-select-button"
+                                  onClick={() => setSelectedFriendId(friend.friendId)}
+                                  type="button"
+                                >
+                                  {renderProfileAvatar(friend.friendName, friend.avatarUrl, "friend-avatar")}
+                                  <div>
+                                    <div className="friend-name-line">
+                                      <strong>{friend.friendName}</strong>
+                                      <span className="friend-level-badge">Lv {friend.level}</span>
+                                    </div>
+                                    <p className="muted friend-row-meta">Connected {prettyDate(friend.createdAt)}</p>
+                                  </div>
+                                </button>
+                              </div>
+                              <button
+                                className="delete-button"
+                                disabled={loading}
+                                onClick={() => void handleRemoveFriend(friend.friendshipId)}
+                                type="button"
+                              >
+                                Remove
+                              </button>
+                            </article>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+
+                    <section className="friends-circle-panel">
+                      <div className="section-title-row">
+                        <div>
+                          <p className="eyebrow">Feed</p>
+                          <h3>Recent friend climbs</h3>
+                        </div>
+                      </div>
+                      {friendFeed.length === 0 ? (
+                        <p className="empty-copy">Accepted friends will start showing up here once they log climbs.</p>
+                      ) : (
+                        <div className="feed friend-feed">
+                          {friendFeed.map((climb) => (
+                            <article className="climb-card" key={climb.id}>
+                              {climb.photo_url ? (
+                                <button className="thumbnail-button" onClick={() => setSelectedPhotoUrl(climb.photo_url)} type="button">
+                                  <img alt={`${climb.grade} climb by ${climb.friend_name}`} className="climb-photo" src={climb.photo_url} />
+                                </button>
+                              ) : null}
+                              <div className="climb-content">
+                                <div className="section-title-row">
+                                  <div>
+                                    <p className="eyebrow">{climb.friend_name}</p>
+                                    <div className="history-title-row">
+                                      <h3>
+                                        {climb.grade}
+                                        {climb.grade_modifier ?? ""}
+                                      </h3>
+                                      {climb.wall_name ? (
+                                        <span className={clsx("history-description", getColorChipClass(climb.wall_name))}>{climb.wall_name}</span>
+                                      ) : null}
+                                    </div>
+                                    <p className="muted history-meta">{prettyDate(climb.climbed_on)}</p>
+                                  </div>
+                                </div>
+                                <div className="tag-row">
+                                  {climb.flashed ? <span className="mini-badge ready">flash</span> : null}
+                                  {climb.style_tags.map((tag) => (
+                                    <span className="mini-badge" key={tag}>
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                                {climb.notes ? <p>{climb.notes}</p> : null}
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      )}
+                    </section>
                   </div>
-                )}
+                ) : null}
               </section>
             </section>
           ) : null}
@@ -1796,4 +1929,12 @@ function initialsForName(name: string) {
     .slice(0, 2)
     .map((part) => part.charAt(0).toUpperCase())
     .join("") || "?";
+}
+
+function renderProfileAvatar(name: string, avatarUrl: string | null | undefined, className: string) {
+  if (avatarUrl) {
+    return <img alt={`${name} profile`} className={clsx(className, "profile-avatar-image")} src={avatarUrl} />;
+  }
+
+  return <div className={className}>{initialsForName(name)}</div>;
 }

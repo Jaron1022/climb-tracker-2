@@ -127,6 +127,34 @@ export async function updateDisplayName(userId: string, displayName: string) {
   return ensureProfile(userId, displayName);
 }
 
+export async function updateProfileAvatar(userId: string, avatarUrl: string | null) {
+  const supabase = getSupabaseBrowserClient() as any;
+  const { data: existing, error: fetchError } = await supabase.from("profiles").select("avatar_url").eq("id", userId).single();
+
+  if (fetchError) {
+    throw fetchError;
+  }
+
+  if (existing.avatar_url && existing.avatar_url !== avatarUrl && shouldUseR2()) {
+    await deletePhotoFromR2(existing.avatar_url);
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({
+      avatar_url: avatarUrl
+    })
+    .eq("id", userId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as ProfileRow;
+}
+
 export async function fetchClimbsForUser(userId: string) {
   const supabase = getSupabaseBrowserClient() as any;
   const { data, error } = await supabase

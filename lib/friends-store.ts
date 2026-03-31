@@ -1,9 +1,13 @@
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { buildStats } from "@/lib/stats";
+import { climbToXp, levelFromXp } from "@/lib/xp";
 import type {
+  ClimbRow,
   FriendFeedClimb,
   FriendshipRow,
   FriendSummary,
   IncomingFriendRequest,
+  Grade,
   ProfileSearchRow
 } from "@/lib/types";
 
@@ -17,7 +21,7 @@ export async function searchProfiles(query: string, currentUserId: string) {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, display_name, created_at")
+    .select("id, display_name, avatar_url, created_at")
     .neq("id", currentUserId)
     .ilike("display_name", `%${trimmed}%`)
     .order("display_name", { ascending: true })
@@ -92,7 +96,7 @@ export async function fetchIncomingRequests(userId: string) {
 
   const supabase = getSupabaseBrowserClient() as any;
   const requesterIds = pendingIncoming.map((item) => item.requester_id);
-  const { data, error } = await supabase.from("profiles").select("id, display_name").in("id", requesterIds);
+  const { data, error } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", requesterIds);
 
   if (error) {
     throw error;
@@ -118,23 +122,48 @@ export async function fetchFriends(userId: string) {
 
   const friendIds = accepted.map((item) => (item.requester_id === userId ? item.addressee_id : item.requester_id));
   const supabase = getSupabaseBrowserClient() as any;
-  const { data, error } = await supabase.from("profiles").select("id, display_name").in("id", friendIds);
+  const { data, error } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", friendIds);
 
   if (error) {
     throw error;
   }
 
-  const names = new Map<string, string>((data ?? []).map((profile: any) => [profile.id, profile.display_name]));
+  const profilesById = new Map<string, { display_name: string; avatar_url: string | null }>(
+    (data ?? []).map((profile: any) => [profile.id, { display_name: profile.display_name, avatar_url: profile.avatar_url ?? null }])
+  );
+  const { data: climbData, error: climbError } = await supabase.from("climbs").select("*").in("profile_id", friendIds);
+
+  if (climbError) {
+    throw climbError;
+  }
+
+  const climbsByFriend = new Map<string, ClimbRow[]>();
+  ((climbData ?? []) as ClimbRow[]).forEach((climb) => {
+    const current = climbsByFriend.get(climb.profile_id) ?? [];
+    current.push(climb);
+    climbsByFriend.set(climb.profile_id, current);
+  });
 
   return accepted
     .map((item) => {
       const friendId = item.requester_id === userId ? item.addressee_id : item.requester_id;
+      const friendClimbs = climbsByFriend.get(friendId) ?? [];
+      const friendXp = (climbsByFriend.get(friendId) ?? []).reduce(
+        (total, climb) => total + climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null),
+        0
+      );
+      const friendStats = buildStats(friendClimbs);
+      const friendProfile = profilesById.get(friendId);
 
       return {
         friendshipId: item.id,
         friendId,
-        friendName: names.get(friendId) ?? "Climber",
-        createdAt: item.responded_at ?? item.created_at
+        friendName: friendProfile?.display_name ?? "Climber",
+        avatarUrl: friendProfile?.avatar_url ?? null,
+        createdAt: item.responded_at ?? item.created_at,
+        level: levelFromXp(friendXp),
+        totalSends: friendClimbs.length,
+        personalBest: friendStats.personalBest as Grade
       };
     })
     .sort((left, right) => left.friendName.localeCompare(right.friendName));

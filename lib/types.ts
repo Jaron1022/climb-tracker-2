@@ -8,11 +8,12 @@ export type GradeModifier = "-" | "+" | null;
 export type ProfileRow = {
   id: string;
   display_name: string;
+  avatar_url: string | null;
   device_id: string;
   created_at: string;
 };
 
-export type ProfileSearchRow = Pick<ProfileRow, "id" | "display_name" | "created_at">;
+export type ProfileSearchRow = Pick<ProfileRow, "id" | "display_name" | "avatar_url" | "created_at">;
 
 export type ClimbRow = {
   id: string;
@@ -64,7 +65,11 @@ export type FriendSummary = {
   friendshipId: string;
   friendId: string;
   friendName: string;
+  avatarUrl: string | null;
   createdAt: string;
+  level: number;
+  totalSends: number;
+  personalBest: Grade;
 };
 
 export type FriendFeedClimb = ClimbRow & {
