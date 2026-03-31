@@ -2689,6 +2689,7 @@ function renderProfileAvatar(
     <div
       className={clsx(
         "profile-avatar-wrap",
+        previewOnly && "profile-avatar-wrap-preview",
         `avatar-frame-tier-${frameTier.id}`,
         `avatar-frame-style-${frameConfig.style}`,
         `avatar-frame-color-${frameConfig.color}`
