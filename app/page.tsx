@@ -1331,7 +1331,7 @@ export default function HomePage() {
                         <article className="friend-row" key={result.id}>
                           <div>
                             <strong>{result.display_name}</strong>
-                            <p className="muted friend-row-meta">Joined {prettyDate(result.created_at)}</p>
+                            <p className="muted friend-row-meta">Tap below to send a friend request.</p>
                           </div>
                           <button
                             className="secondary-button"
@@ -1552,8 +1552,8 @@ export default function HomePage() {
                         <svg aria-hidden="true" className="trend-svg" preserveAspectRatio="xMidYMid meet" viewBox={`0 0 100 ${trendChart.height + 4}`}>
                         <defs>
                           <linearGradient id="trendFill" x1="0" x2="0" y1="0" y2="1">
-                            <stop offset="0%" stopColor="rgba(216, 111, 45, 0.34)" />
-                            <stop offset="100%" stopColor="rgba(216, 111, 45, 0.03)" />
+                            <stop offset="0%" stopColor="rgba(141, 185, 255, 0.34)" />
+                            <stop offset="100%" stopColor="rgba(141, 185, 255, 0.03)" />
                           </linearGradient>
                         </defs>
                         {trendChart.areaPath ? <path className="trend-area" d={trendChart.areaPath} /> : null}

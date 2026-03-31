@@ -129,12 +129,22 @@ export function buildProgressStats(climbs: ClimbRow[], range: ProgressRange) {
 }
 
 export function prettyDate(rawDate: string) {
+  if (!rawDate) {
+    return "Unknown date";
+  }
+
   const normalized = rawDate.includes("T") ? rawDate : `${rawDate}T12:00:00`;
+  const parsed = new Date(normalized);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return rawDate;
+  }
+
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric"
-  }).format(new Date(normalized));
+  }).format(parsed);
 }
 
 function filterClimbsByRange(climbs: ClimbRow[], range: ProgressRange) {

@@ -313,6 +313,13 @@ button {
   gap: 1rem;
 }
 
+.friends-grid .panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 42%),
+    var(--surface-strong);
+  box-shadow: var(--shadow-strong);
+}
+
 .friends-list,
 .friends-search-results {
   display: grid;
@@ -328,13 +335,11 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.9rem 0;
-  border-bottom: 1px solid var(--line);
-}
-
-.friend-row:last-child {
-  border-bottom: 0;
-  padding-bottom: 0;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface-control);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .friend-row-meta {
@@ -625,7 +630,10 @@ button {
   width: 100%;
   height: 155px;
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.42);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 42%),
+    color-mix(in srgb, var(--surface-control-strong) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--line) 84%, transparent);
 }
 
 .trend-area {
@@ -1446,6 +1454,17 @@ button {
   .history-color-white {
     color: #3f3a34;
     border-color: rgba(255, 255, 255, 0.22);
+  }
+
+  .friends-grid .panel {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 42%),
+      var(--surface-strong);
+  }
+
+  .friend-row {
+    background: color-mix(in srgb, var(--surface-control) 92%, transparent);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
   }
 
   .delete-button {
