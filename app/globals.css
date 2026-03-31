@@ -3543,12 +3543,7 @@ button {
 
   .history-feed,
   .friend-feed {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.7rem;
-  }
-
-  .climb-card {
-    border-radius: 20px;
+    grid-template-columns: 1fr;
   }
 
   .dashboard-meta {
