@@ -159,7 +159,7 @@ export async function fetchFriends(userId: string) {
     .map((item) => {
       const friendId = item.requester_id === userId ? item.addressee_id : item.requester_id;
       const friendClimbs = climbsByFriend.get(friendId) ?? [];
-      const recentClimbs = getRecentClimbs(friendClimbs);
+      const recentClimbs = getRecentClimbs(friendClimbs, 7);
       const friendXp = (climbsByFriend.get(friendId) ?? []).reduce(
         (total, climb) => total + climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null),
         0
@@ -185,8 +185,8 @@ export async function fetchFriends(userId: string) {
         level: levelFromXp(friendXp),
         totalSends: friendClimbs.length,
         personalBest: friendStats.personalBest as Grade,
-        recentSends30: recentClimbs.length,
-        activeDays30: new Set(recentClimbs.map((climb) => climb.climbed_on)).size,
+        recentSends7: recentClimbs.length,
+        activeDays7: new Set(recentClimbs.map((climb) => climb.climbed_on)).size,
         leaderboardScore: sumLeaderboardScoreBreakdown(leaderboardBreakdown),
         leaderboardBreakdown
       };
@@ -227,14 +227,15 @@ export function buildLeaderboardScore(level: number, personalBest: Grade, recent
 }
 
 export function getLeaderboardScoreBreakdown(level: number, personalBest: Grade, recentSends30: number, activeDays30: number) {
-  const gradeIndex = Math.max(0, CLIMB_GRADES.indexOf(personalBest));
-  const cappedRecentSends = Math.min(recentSends30, 12);
-  const cappedActiveDays = Math.min(activeDays30, 8);
+  const normalizedGrade = normalizeLeaderboardGrade(personalBest);
+  const gradeIndex = Math.max(0, CLIMB_GRADES.indexOf(normalizedGrade));
+  const cappedRecentSends = Math.min(recentSends30, 10);
+  const cappedActiveDays = Math.min(activeDays30, 7);
   return {
-    levelPoints: level * 100,
-    personalBestPoints: gradeIndex * 18,
-    recentSendsPoints: cappedRecentSends * 6,
-    activeDaysPoints: cappedActiveDays * 10
+    levelPoints: level * 8,
+    personalBestPoints: gradeIndex * 24,
+    recentSendsPoints: cappedRecentSends * 12,
+    activeDaysPoints: cappedActiveDays * 14
   };
 }
 
@@ -247,14 +248,18 @@ function sumLeaderboardScoreBreakdown(breakdown: {
   return breakdown.levelPoints + breakdown.personalBestPoints + breakdown.recentSendsPoints + breakdown.activeDaysPoints;
 }
 
-function getRecentClimbs(climbs: ClimbRow[]) {
+function getRecentClimbs(climbs: ClimbRow[], days: number) {
   const today = new Date();
   const threshold = new Date(today);
   threshold.setHours(0, 0, 0, 0);
-  threshold.setDate(threshold.getDate() - 29);
+  threshold.setDate(threshold.getDate() - (days - 1));
 
   return climbs.filter((climb) => {
     const climbedOn = new Date(`${climb.climbed_on}T00:00:00`);
     return climbedOn >= threshold;
   });
+}
+
+function normalizeLeaderboardGrade(personalBest: Grade) {
+  return (personalBest.match(/^VB|^V\d+/)?.[0] ?? "VB") as Grade;
 }

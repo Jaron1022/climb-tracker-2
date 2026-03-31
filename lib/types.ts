@@ -78,8 +78,8 @@ export type FriendSummary = {
   level: number;
   totalSends: number;
   personalBest: Grade;
-  recentSends30: number;
-  activeDays30: number;
+  recentSends7: number;
+  activeDays7: number;
   leaderboardScore: number;
   leaderboardBreakdown: {
     levelPoints: number;
