@@ -102,6 +102,11 @@ export default function HomePage() {
   const [expandedLeaderboardId, setExpandedLeaderboardId] = useState("");
   const [progressRange, setProgressRange] = useState<ProgressRange>("ALL");
   const [isLandscapePhone, setIsLandscapePhone] = useState(false);
+  const feedbackToast = error
+    ? { type: "error" as const, text: error }
+    : success
+      ? { type: "success" as const, text: success }
+      : null;
 
   const hydrateFriendState = useCallback(
     async (userId: string) => {
@@ -1323,13 +1328,6 @@ export default function HomePage() {
         </section>
       ) : null}
       <main className="shell shell-dashboard" data-app-theme={selectedTheme}>
-      {error ? (
-        <section className="message error status-banner">
-          <strong>Something needs attention:</strong> {error}
-        </section>
-      ) : null}
-
-        {success ? <section className="message success status-banner">{success}</section> : null}
 
       {selectedPhotoUrl ? (
         <div className="lightbox" onClick={() => setSelectedPhotoUrl(null)} role="button" tabIndex={0}>
@@ -1691,6 +1689,9 @@ export default function HomePage() {
             </div>
           </header>
 
+          <div className="view-stage" key={activeView}>
+          {booting ? renderViewSkeleton(activeView) : (
+          <>
           {activeView === "home" ? (
             <>
               <section className="dashboard-top">
@@ -2429,6 +2430,32 @@ export default function HomePage() {
               </section>
             </section>
           ) : null}
+          </>
+          )}
+          </div>
+
+          {feedbackToast ? (
+            <section className={clsx("status-toast", `status-toast-${feedbackToast.type}`)} role="status" aria-live="polite">
+              <div className="status-toast-copy">
+                {feedbackToast.type === "error" ? <strong>Something needs attention:</strong> : null}
+                <span>{feedbackToast.text}</span>
+              </div>
+              <button
+                aria-label="Dismiss message"
+                className="status-toast-close"
+                onClick={() => {
+                  if (feedbackToast.type === "error") {
+                    setError("");
+                  } else {
+                    setSuccess("");
+                  }
+                }}
+                type="button"
+              >
+                ×
+              </button>
+            </section>
+          ) : null}
 
           <nav className="bottom-nav" aria-label="Primary navigation">
               {[
@@ -2490,6 +2517,123 @@ function toggleStyleTag(selectedTags: StyleTag[], tag: StyleTag) {
   }
 
   return [...selectedTags, tag];
+}
+
+function renderViewSkeleton(view: "home" | "history" | "friends" | "account" | "progress") {
+  if (view === "home") {
+    return (
+      <section className="view-loading">
+        <section className="dashboard-top">
+          <section className="hero-card">
+            <div className="skeleton-block skeleton-title" />
+            <div className="skeleton-block skeleton-level" />
+            <div className="skeleton-block skeleton-line" />
+          </section>
+        </section>
+        <section className="dashboard-grid">
+          <section className="panel">
+            <div className="skeleton-block skeleton-title" />
+            <div className="skeleton-chip-row">
+              <div className="skeleton-chip" />
+              <div className="skeleton-chip" />
+              <div className="skeleton-chip" />
+            </div>
+            <div className="skeleton-stack">
+              <div className="skeleton-block skeleton-row" />
+              <div className="skeleton-block skeleton-row" />
+              <div className="skeleton-block skeleton-row" />
+            </div>
+          </section>
+        </section>
+      </section>
+    );
+  }
+
+  if (view === "history") {
+    return (
+      <section className="history-view view-loading">
+        <section className="panel history-panel">
+          <div className="skeleton-block skeleton-title" />
+          <div className="skeleton-chip-row">
+            <div className="skeleton-chip" />
+            <div className="skeleton-chip" />
+            <div className="skeleton-chip" />
+            <div className="skeleton-chip" />
+          </div>
+          <div className="feed history-feed">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <article className="climb-card" key={index}>
+                <div className="skeleton-block skeleton-photo" />
+                <div className="skeleton-stack">
+                  <div className="skeleton-block skeleton-line" />
+                  <div className="skeleton-block skeleton-line short" />
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      </section>
+    );
+  }
+
+  if (view === "friends") {
+    return (
+      <section className="friends-page view-loading">
+        <section className="panel friends-shell">
+          <div className="skeleton-block skeleton-title" />
+          <div className="skeleton-chip-row">
+            <div className="skeleton-chip" />
+            <div className="skeleton-chip" />
+            <div className="skeleton-chip" />
+            <div className="skeleton-chip" />
+          </div>
+          <div className="skeleton-stack">
+            <div className="skeleton-block skeleton-row tall" />
+            <div className="skeleton-block skeleton-row tall" />
+            <div className="skeleton-block skeleton-row tall" />
+          </div>
+        </section>
+      </section>
+    );
+  }
+
+  if (view === "account") {
+    return (
+      <section className="account-grid view-loading">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <section className="panel" key={index}>
+            <div className="skeleton-block skeleton-title" />
+            <div className="skeleton-stack">
+              <div className="skeleton-block skeleton-row" />
+              <div className="skeleton-block skeleton-row" />
+              <div className="skeleton-block skeleton-row short" />
+            </div>
+          </section>
+        ))}
+      </section>
+    );
+  }
+
+  return (
+    <section className="progress-view view-loading">
+      <section className="panel progress-hero">
+        <div className="skeleton-block skeleton-title" />
+        <div className="skeleton-chip-row">
+          <div className="skeleton-chip" />
+          <div className="skeleton-chip" />
+          <div className="skeleton-chip" />
+          <div className="skeleton-chip" />
+          <div className="skeleton-chip" />
+        </div>
+        <div className="skeleton-block skeleton-chart" />
+        <div className="skeleton-stack">
+          <div className="skeleton-block skeleton-row" />
+          <div className="skeleton-block skeleton-row" />
+          <div className="skeleton-block skeleton-row" />
+        </div>
+      </section>
+    </section>
+  );
 }
 
 function getColorChipClass(value: string) {
