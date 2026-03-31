@@ -16,12 +16,12 @@ export async function getCurrentUser() {
   return user;
 }
 
-export function subscribeToAuthChanges(callback: (user: User | null) => void) {
+export function subscribeToAuthChanges(callback: (user: User | null, event?: string) => void) {
   const supabase = getSupabaseBrowserClient() as any;
   const {
     data: { subscription }
   } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
-    callback(session?.user ?? null);
+    callback(session?.user ?? null, _event);
   });
 
   return () => subscription.unsubscribe();
@@ -49,6 +49,28 @@ export async function signUpWithEmail(email: string, password: string, displayNa
   }
 
   return data.user;
+}
+
+export async function requestPasswordReset(email: string, redirectTo: string) {
+  const supabase = getSupabaseBrowserClient() as any;
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function updatePassword(password: string) {
+  const supabase = getSupabaseBrowserClient() as any;
+  const { error } = await supabase.auth.updateUser({
+    password
+  });
+
+  if (error) {
+    throw error;
+  }
 }
 
 export async function signInWithEmail(email: string, password: string) {

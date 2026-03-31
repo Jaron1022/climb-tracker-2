@@ -22,11 +22,13 @@ import {
   fetchClimbsForUser,
   fetchProfile,
   getCurrentUser,
+  requestPasswordReset,
   saveClimbForUser,
   signInWithEmail,
   signOutUser,
   signUpWithEmail,
   subscribeToAuthChanges,
+  updatePassword,
   updateProfileAvatar,
   updateDisplayName,
   updateClimbForUser
@@ -51,6 +53,9 @@ export default function HomePage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [resetPasswordValue, setResetPasswordValue] = useState("");
+  const [confirmResetPasswordValue, setConfirmResetPasswordValue] = useState("");
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signup");
   const [activeView, setActiveView] = useState<"home" | "history" | "friends" | "account" | "progress">("home");
   const [accountDisplayName, setAccountDisplayName] = useState("");
@@ -66,7 +71,7 @@ export default function HomePage() {
   const [booting, setBooting] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [activeAction, setActiveAction] = useState<"auth" | "rename" | "avatar" | "logout" | "account-delete" | "climb" | "edit" | "load" | "delete" | "">("");
+  const [activeAction, setActiveAction] = useState<"auth" | "rename" | "avatar" | "logout" | "account-delete" | "password-reset" | "password-update" | "climb" | "edit" | "load" | "delete" | "">("");
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
   const [climbPendingDelete, setClimbPendingDelete] = useState<ClimbRow | null>(null);
   const [editingClimb, setEditingClimb] = useState<ClimbRow | null>(null);
@@ -171,8 +176,11 @@ export default function HomePage() {
 
     void initialize();
 
-    const unsubscribe = subscribeToAuthChanges((user) => {
+    const unsubscribe = subscribeToAuthChanges((user, event) => {
       setCurrentUserEmail(user?.email ?? "");
+      if (event === "PASSWORD_RECOVERY") {
+        setIsRecoveryMode(true);
+      }
       void syncUserData(user?.id ?? "").catch((err) => {
         setError(getMessage(err));
       });
@@ -243,6 +251,16 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const hash = window.location.hash.toLowerCase();
+    const search = window.location.search.toLowerCase();
+    setIsRecoveryMode(hash.includes("type=recovery") || search.includes("type=recovery"));
+  }, []);
+
+  useEffect(() => {
     if (!activeProfileId || activeView !== "friends") {
       return;
     }
@@ -310,6 +328,72 @@ export default function HomePage() {
       if (authMode === "signup") {
         setDisplayName("");
       }
+    } catch (err) {
+      setError(getMessage(err));
+    } finally {
+      setLoading(false);
+      setActiveAction("");
+    }
+  }
+
+  async function handlePasswordResetRequest(prefilledEmail?: string) {
+    const targetEmail = (prefilledEmail ?? email).trim();
+
+    if (!targetEmail) {
+      setError("Add your email first so I know where to send the reset link.");
+      setSuccess("");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setActiveAction("password-reset");
+      setError("");
+      setSuccess("");
+      await requestPasswordReset(targetEmail, window.location.origin);
+      setSuccess(`Password reset email sent to ${targetEmail}.`);
+    } catch (err) {
+      setError(getMessage(err));
+    } finally {
+      setLoading(false);
+      setActiveAction("");
+    }
+  }
+
+  async function handlePasswordUpdate(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!resetPasswordValue.trim()) {
+      setError("Add a new password first.");
+      setSuccess("");
+      return;
+    }
+
+    if (resetPasswordValue.length < 6) {
+      setError("Use at least 6 characters for your new password.");
+      setSuccess("");
+      return;
+    }
+
+    if (resetPasswordValue !== confirmResetPasswordValue) {
+      setError("Your passwords do not match yet.");
+      setSuccess("");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setActiveAction("password-update");
+      setError("");
+      setSuccess("");
+      await updatePassword(resetPasswordValue);
+      setResetPasswordValue("");
+      setConfirmResetPasswordValue("");
+      setIsRecoveryMode(false);
+      if (typeof window !== "undefined") {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+      setSuccess("Password updated. You can sign in with your new password now.");
     } catch (err) {
       setError(getMessage(err));
     } finally {
@@ -1120,6 +1204,39 @@ export default function HomePage() {
           <p className="muted helper-copy">Add your Supabase URL and anon key to `.env.local`, then restart the app.</p>
           <div className="inline-note">This account-backed version needs `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` before it can load.</div>
         </section>
+      ) : isRecoveryMode ? (
+        <section className="panel onboarding-panel">
+          <div className="section-title-row">
+            <div>
+              <p className="eyebrow">Reset password</p>
+              <h1>Choose a new password</h1>
+            </div>
+          </div>
+          <p className="muted helper-copy">You came back from a Supabase recovery link. Set your new password here and then jump back into the app.</p>
+          <form className="stack-sm" onSubmit={handlePasswordUpdate}>
+            <label className="field">
+              <span>New password</span>
+              <input
+                type="password"
+                placeholder="At least 6 characters"
+                value={resetPasswordValue}
+                onChange={(event) => setResetPasswordValue(event.target.value)}
+              />
+            </label>
+            <label className="field">
+              <span>Confirm new password</span>
+              <input
+                type="password"
+                placeholder="Repeat your new password"
+                value={confirmResetPasswordValue}
+                onChange={(event) => setConfirmResetPasswordValue(event.target.value)}
+              />
+            </label>
+            <button className="primary-button" disabled={loading} type="submit">
+              {activeAction === "password-update" ? "Saving new password..." : "Update password"}
+            </button>
+          </form>
+        </section>
       ) : !activeProfile ? (
         <section className="panel onboarding-panel">
           <div className="section-title-row">
@@ -1176,6 +1293,16 @@ export default function HomePage() {
                   ? "Create account"
                   : "Sign in"}
             </button>
+            {authMode === "signin" ? (
+              <button
+                className="text-button"
+                disabled={loading}
+                onClick={() => void handlePasswordResetRequest()}
+                type="button"
+              >
+                {activeAction === "password-reset" ? "Sending reset email..." : "Forgot password?"}
+              </button>
+            ) : null}
           </form>
         </section>
       ) : (
@@ -1347,17 +1474,20 @@ export default function HomePage() {
                 </form>
               </section>
 
-              <section className="panel">
-                <div className="section-title-row">
-                  <div>
-                    <p className="eyebrow">Actions</p>
-                    <h2>Manage account</h2>
+                <section className="panel">
+                  <div className="section-title-row">
+                    <div>
+                      <p className="eyebrow">Actions</p>
+                      <h2>Manage account</h2>
+                    </div>
                   </div>
-                </div>
-                <div className="account-actions">
-                  <button className="secondary-button" disabled={loading} onClick={() => void handleSignOut()} type="button">
-                    {activeAction === "logout" ? "Signing out..." : "Sign out"}
-                  </button>
+                  <div className="account-actions">
+                    <button className="secondary-button" disabled={loading} onClick={() => void handlePasswordResetRequest(currentUserEmail)} type="button">
+                      {activeAction === "password-reset" ? "Sending reset email..." : "Reset password"}
+                    </button>
+                    <button className="secondary-button" disabled={loading} onClick={() => void handleSignOut()} type="button">
+                      {activeAction === "logout" ? "Signing out..." : "Sign out"}
+                    </button>
                   <button className="delete-button" disabled={loading} onClick={() => void handleAccountDelete()} type="button">
                     {activeAction === "account-delete" ? "Deleting account..." : "Delete account"}
                   </button>

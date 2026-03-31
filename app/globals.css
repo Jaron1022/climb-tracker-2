@@ -1295,6 +1295,20 @@ button {
   color: var(--text);
 }
 
+.text-button {
+  width: fit-content;
+  border: 0;
+  background: transparent;
+  color: var(--accent-deep);
+  padding: 0.15rem 0.1rem;
+  font-weight: 700;
+}
+
+.text-button:hover,
+.text-button:focus-visible {
+  text-decoration: underline;
+}
+
 .auth-signout-button {
   padding: 0.55rem 0.85rem;
 }
