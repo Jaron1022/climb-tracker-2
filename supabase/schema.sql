@@ -4,12 +4,16 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   display_name text not null check (char_length(display_name) between 1 and 60),
   avatar_url text,
+  selected_emblems text[] not null default '{}',
   device_id text not null default 'supabase-account',
   created_at timestamptz not null default timezone('utc'::text, now())
 );
 
 alter table public.profiles
 add column if not exists avatar_url text;
+
+alter table public.profiles
+add column if not exists selected_emblems text[] not null default '{}';
 
 create table if not exists public.climbs (
   id uuid primary key default gen_random_uuid(),

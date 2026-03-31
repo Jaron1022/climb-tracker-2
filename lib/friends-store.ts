@@ -21,7 +21,7 @@ export async function searchProfiles(query: string, currentUserId: string) {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, display_name, avatar_url, created_at")
+    .select("*")
     .neq("id", currentUserId)
     .ilike("display_name", `%${trimmed}%`)
     .order("display_name", { ascending: true })
@@ -96,18 +96,20 @@ export async function fetchIncomingRequests(userId: string) {
 
   const supabase = getSupabaseBrowserClient() as any;
   const requesterIds = pendingIncoming.map((item) => item.requester_id);
-  const { data, error } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", requesterIds);
+  const { data, error } = await supabase.from("profiles").select("*").in("id", requesterIds);
 
   if (error) {
     throw error;
   }
 
-  const names = new Map<string, string>((data ?? []).map((profile: any) => [profile.id, profile.display_name]));
+  const profiles = new Map<string, any>((data ?? []).map((profile: any) => [profile.id, profile]));
 
   return pendingIncoming.map((item) => ({
     friendshipId: item.id,
     requesterId: item.requester_id,
-    requesterName: names.get(item.requester_id) ?? "Climber",
+    requesterName: profiles.get(item.requester_id)?.display_name ?? "Climber",
+    requesterAvatarUrl: profiles.get(item.requester_id)?.avatar_url ?? null,
+    requesterSelectedEmblems: profiles.get(item.requester_id)?.selected_emblems ?? [],
     createdAt: item.created_at
   }));
 }
@@ -122,14 +124,21 @@ export async function fetchFriends(userId: string) {
 
   const friendIds = accepted.map((item) => (item.requester_id === userId ? item.addressee_id : item.requester_id));
   const supabase = getSupabaseBrowserClient() as any;
-  const { data, error } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", friendIds);
+  const { data, error } = await supabase.from("profiles").select("*").in("id", friendIds);
 
   if (error) {
     throw error;
   }
 
-  const profilesById = new Map<string, { display_name: string; avatar_url: string | null }>(
-    (data ?? []).map((profile: any) => [profile.id, { display_name: profile.display_name, avatar_url: profile.avatar_url ?? null }])
+  const profilesById = new Map<string, { display_name: string; avatar_url: string | null; selected_emblems: string[] }>(
+    (data ?? []).map((profile: any) => [
+      profile.id,
+      {
+        display_name: profile.display_name,
+        avatar_url: profile.avatar_url ?? null,
+        selected_emblems: profile.selected_emblems ?? []
+      }
+    ])
   );
   const { data: climbData, error: climbError } = await supabase.from("climbs").select("*").in("profile_id", friendIds);
 
@@ -161,6 +170,7 @@ export async function fetchFriends(userId: string) {
         friendId,
         friendName: friendProfile?.display_name ?? "Climber",
         avatarUrl: friendProfile?.avatar_url ?? null,
+        selectedEmblems: friendProfile?.selected_emblems ?? [],
         createdAt: item.responded_at ?? item.created_at,
         level: levelFromXp(friendXp),
         totalSends: friendClimbs.length,

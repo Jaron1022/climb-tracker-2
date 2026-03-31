@@ -179,6 +179,24 @@ export async function updateProfileAvatar(userId: string, avatarUrl: string | nu
   return data as ProfileRow;
 }
 
+export async function updateSelectedEmblems(userId: string, selectedEmblems: string[]) {
+  const supabase = getSupabaseBrowserClient() as any;
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({
+      selected_emblems: selectedEmblems
+    })
+    .eq("id", userId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as ProfileRow;
+}
+
 export async function fetchClimbsForUser(userId: string) {
   const supabase = getSupabaseBrowserClient() as any;
   const { data, error } = await supabase

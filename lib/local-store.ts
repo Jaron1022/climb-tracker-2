@@ -12,7 +12,12 @@ export async function fetchProfiles() {
   const db = await openDb();
   await migrateLegacyLocalStorage(db);
   const profiles = await getAll<ProfileRow>(db, PROFILE_STORE);
-  return profiles.sort((left, right) => right.created_at.localeCompare(left.created_at));
+  return profiles
+    .map((profile) => ({
+      ...profile,
+      selected_emblems: profile.selected_emblems ?? []
+    }))
+    .sort((left, right) => right.created_at.localeCompare(left.created_at));
 }
 
 export async function createProfile(displayName: string) {
@@ -21,6 +26,7 @@ export async function createProfile(displayName: string) {
     id: makeId(),
     display_name: displayName,
     avatar_url: null,
+    selected_emblems: [],
     device_id: "local-device",
     created_at: new Date().toISOString()
   };

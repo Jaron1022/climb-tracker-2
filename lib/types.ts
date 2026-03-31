@@ -9,11 +9,12 @@ export type ProfileRow = {
   id: string;
   display_name: string;
   avatar_url: string | null;
+  selected_emblems: string[];
   device_id: string;
   created_at: string;
 };
 
-export type ProfileSearchRow = Pick<ProfileRow, "id" | "display_name" | "avatar_url" | "created_at">;
+export type ProfileSearchRow = Pick<ProfileRow, "id" | "display_name" | "avatar_url" | "selected_emblems" | "created_at">;
 
 export type ClimbRow = {
   id: string;
@@ -58,6 +59,8 @@ export type IncomingFriendRequest = {
   friendshipId: string;
   requesterId: string;
   requesterName: string;
+  requesterAvatarUrl: string | null;
+  requesterSelectedEmblems: string[];
   createdAt: string;
 };
 
@@ -66,6 +69,7 @@ export type FriendSummary = {
   friendId: string;
   friendName: string;
   avatarUrl: string | null;
+  selectedEmblems: string[];
   createdAt: string;
   level: number;
   totalSends: number;

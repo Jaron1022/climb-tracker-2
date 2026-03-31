@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
+import { EMBLEM_DEFINITIONS, getUnlockedEmblems, normalizeSelectedEmblems } from "@/lib/emblems";
 import { CLIMB_COLORS, CLIMB_GRADES, DEFAULT_FORM, STYLE_TAG_GROUPS, climbToXp, gradeToXp } from "@/lib/xp";
 import { uploadPhoto } from "@/lib/local-store";
 import {
@@ -31,6 +32,7 @@ import {
   subscribeToAuthChanges,
   updatePassword,
   updateProfileAvatar,
+  updateSelectedEmblems,
   updateDisplayName,
   updateClimbForUser
 } from "@/lib/supabase-store";
@@ -73,13 +75,15 @@ export default function HomePage() {
   const [booting, setBooting] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [activeAction, setActiveAction] = useState<"auth" | "rename" | "avatar" | "logout" | "account-delete" | "password-reset" | "password-update" | "climb" | "edit" | "load" | "delete" | "">("");
+  const [activeAction, setActiveAction] = useState<"auth" | "rename" | "avatar" | "emblems" | "logout" | "account-delete" | "password-reset" | "password-update" | "climb" | "edit" | "load" | "delete" | "">("");
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
   const [climbPendingDelete, setClimbPendingDelete] = useState<ClimbRow | null>(null);
   const [editingClimb, setEditingClimb] = useState<ClimbRow | null>(null);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [showSaveBurst, setShowSaveBurst] = useState(false);
   const [isXpInfoOpen, setIsXpInfoOpen] = useState(false);
+  const [isEmblemPickerOpen, setIsEmblemPickerOpen] = useState(false);
+  const [selectedEmblemDraft, setSelectedEmblemDraft] = useState<string[]>([]);
   const [historyGradeFilter, setHistoryGradeFilter] = useState<"All" | ClimbRow["grade"]>("All");
   const [historyTagQuery, setHistoryTagQuery] = useState("");
   const [historyVisibleCount, setHistoryVisibleCount] = useState(20);
@@ -405,6 +409,51 @@ export default function HomePage() {
     }
   }
 
+  function openEmblemPicker() {
+    setSelectedEmblemDraft(selectedEmblems);
+    setIsEmblemPickerOpen(true);
+  }
+
+  function toggleEmblemSelection(emblemId: string, isUnlocked: boolean) {
+    if (!isUnlocked) {
+      return;
+    }
+
+    setSelectedEmblemDraft((current) => {
+      if (current.includes(emblemId)) {
+        return current.filter((id) => id !== emblemId);
+      }
+
+      if (current.length >= 3) {
+        return current;
+      }
+
+      return [...current, emblemId];
+    });
+  }
+
+  async function handleSaveEmblems() {
+    if (!activeProfileId) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setActiveAction("emblems");
+      setError("");
+      setSuccess("");
+      const updatedProfile = await updateSelectedEmblems(activeProfileId, selectedEmblemDraft);
+      setActiveProfile(updatedProfile);
+      setIsEmblemPickerOpen(false);
+      setSuccess("Emblems updated.");
+    } catch (err) {
+      setError(getMessage(err));
+    } finally {
+      setLoading(false);
+      setActiveAction("");
+    }
+  }
+
   async function handleSignOut() {
     try {
       setLoading(true);
@@ -650,6 +699,12 @@ export default function HomePage() {
 
   const stats = useMemo(() => buildStats(climbs), [climbs]);
   const progressStats = useMemo(() => buildProgressStats(climbs, progressRange), [climbs, progressRange]);
+  const unlockedEmblems = useMemo(() => getUnlockedEmblems(climbs), [climbs]);
+  const unlockedEmblemIds = useMemo(() => unlockedEmblems.map((emblem) => emblem.id), [unlockedEmblems]);
+  const selectedEmblems = useMemo(
+    () => normalizeSelectedEmblems(activeProfile?.selected_emblems ?? [], unlockedEmblemIds),
+    [activeProfile?.selected_emblems, unlockedEmblemIds]
+  );
   const leaderboardEntries = useMemo(() => {
     const recentClimbs = climbs.filter((climb) => {
       const climbedOn = new Date(`${climb.climbed_on}T00:00:00`);
@@ -664,6 +719,7 @@ export default function HomePage() {
           id: activeProfile.id,
           name: activeProfile.display_name,
           avatarUrl: activeProfile.avatar_url,
+          selectedEmblems,
           level: stats.level,
           personalBest: stats.personalBest as Grade,
           recentSends30: recentClimbs.length,
@@ -677,6 +733,7 @@ export default function HomePage() {
       id: friend.friendId,
       name: friend.friendName,
       avatarUrl: friend.avatarUrl,
+      selectedEmblems: friend.selectedEmblems,
       level: friend.level,
       personalBest: friend.personalBest,
       recentSends30: friend.recentSends30,
@@ -688,7 +745,7 @@ export default function HomePage() {
     return [selfEntry, ...friendEntries]
       .filter((entry): entry is NonNullable<typeof selfEntry> => Boolean(entry))
       .sort((left, right) => right.score - left.score || right.level - left.level || left.name.localeCompare(right.name));
-  }, [activeProfile, climbs, friends, stats.level, stats.personalBest]);
+  }, [activeProfile, climbs, friends, selectedEmblems, stats.level, stats.personalBest]);
   const maxGradeCount = useMemo(
     () => Math.max(1, ...CLIMB_GRADES.map((grade) => stats.completedByGrade[grade] ?? 0)),
     [stats.completedByGrade]
@@ -998,14 +1055,14 @@ export default function HomePage() {
           </section>
         ) : null}
       {isXpInfoOpen ? (
-        <section className="overlay" aria-label="XP breakdown" role="dialog">
+        <section className="lightbox xp-info-overlay" aria-label="XP breakdown" role="dialog">
           <div className="panel xp-info-modal">
             <div className="section-title-row">
               <div>
                 <p className="eyebrow">XP breakdown</p>
                 <h2>How climb XP works</h2>
               </div>
-              <button className="lightbox-close" onClick={() => setIsXpInfoOpen(false)} type="button">
+              <button className="secondary-button xp-info-close" onClick={() => setIsXpInfoOpen(false)} type="button">
                 Close
               </button>
             </div>
@@ -1032,6 +1089,61 @@ export default function HomePage() {
               </div>
             </div>
             <p className="muted xp-info-note">Final climb XP uses the base grade first, then applies `-` or `+`, then the flash bonus if it was first try.</p>
+          </div>
+        </section>
+      ) : null}
+      {isEmblemPickerOpen ? (
+        <section className="lightbox emblem-picker-overlay" aria-label="Select emblems" role="dialog">
+          <div className="panel emblem-picker-modal">
+            <div className="emblem-picker-handle" aria-hidden="true" />
+            <div className="section-title-row">
+              <div>
+                <p className="eyebrow">Select emblems</p>
+                <h2>Your badge loadout</h2>
+              </div>
+            </div>
+            <div className="emblem-selected-row">
+              {[0, 1, 2].map((slot) => {
+                const emblemId = selectedEmblemDraft[slot];
+                const emblem = EMBLEM_DEFINITIONS.find((item) => item.id === emblemId);
+
+                return (
+                  <div className="emblem-selected-slot" key={slot}>
+                    {emblem ? renderEmblemBadge(emblem.id, "large") : <span className="muted">Empty</span>}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="emblem-grid">
+              {EMBLEM_DEFINITIONS.map((emblem) => {
+                const isUnlocked = unlockedEmblemIds.includes(emblem.id);
+                const isSelected = selectedEmblemDraft.includes(emblem.id);
+
+                return (
+                  <button
+                    className={clsx("emblem-card", isSelected && "selected", !isUnlocked && "locked")}
+                    key={emblem.id}
+                    onClick={() => toggleEmblemSelection(emblem.id, isUnlocked)}
+                    type="button"
+                  >
+                    {renderEmblemBadge(emblem.id, "large")}
+                    <strong>{emblem.name}</strong>
+                    <span>{isUnlocked ? emblem.description : "Locked"}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="confirm-actions">
+              <button className="secondary-button" onClick={() => setSelectedEmblemDraft([])} type="button">
+                Clear all
+              </button>
+              <button className="secondary-button" onClick={() => setIsEmblemPickerOpen(false)} type="button">
+                Cancel
+              </button>
+              <button className="primary-button" disabled={loading} onClick={() => void handleSaveEmblems()} type="button">
+                {activeAction === "emblems" ? "Saving..." : "Save emblems"}
+              </button>
+            </div>
           </div>
         </section>
       ) : null}
@@ -1500,7 +1612,7 @@ export default function HomePage() {
                 </div>
 
                 <div className="account-profile-hero">
-                  {renderProfileAvatar(activeProfile.display_name, activeProfile.avatar_url, "account-avatar account-avatar-large")}
+                  {renderProfileAvatar(activeProfile.display_name, activeProfile.avatar_url, selectedEmblems, "account-avatar account-avatar-large")}
                   <div className="account-profile-copy">
                     <strong>{activeProfile.display_name}</strong>
                     <p className="muted">Your photo shows up in Friends and helps your circle recognize you faster.</p>
@@ -1518,6 +1630,9 @@ export default function HomePage() {
                       type="button"
                     >
                       {activeAction === "avatar" ? "Uploading..." : activeProfile.avatar_url ? "Change profile photo" : "Add profile photo"}
+                    </button>
+                    <button className="secondary-button" disabled={loading} onClick={openEmblemPicker} type="button">
+                      Choose emblems
                     </button>
                   </div>
                 </div>
@@ -1656,7 +1771,7 @@ export default function HomePage() {
                           return (
                             <article className="friend-row" key={result.id}>
                               <div className="friend-row-main">
-                                {renderProfileAvatar(result.display_name, result.avatar_url, "friend-avatar")}
+                                {renderProfileAvatar(result.display_name, result.avatar_url, result.selected_emblems, "friend-avatar")}
                                 <div>
                                   <strong>{result.display_name}</strong>
                                   <p className="muted friend-row-meta">Tap below to send a friend request.</p>
@@ -1687,7 +1802,7 @@ export default function HomePage() {
                         {incomingRequests.map((request) => (
                           <article className="friend-row" key={request.friendshipId}>
                             <div className="friend-row-main">
-                              <div className="friend-avatar">{initialsForName(request.requesterName)}</div>
+                              {renderProfileAvatar(request.requesterName, request.requesterAvatarUrl, request.requesterSelectedEmblems, "friend-avatar")}
                               <div>
                                 <strong>{request.requesterName}</strong>
                                 <p className="muted friend-row-meta">Requested {prettyDate(request.createdAt)}</p>
@@ -1732,7 +1847,7 @@ export default function HomePage() {
                         {leaderboardEntries.map((entry, index) => (
                           <article className={clsx("leaderboard-row", entry.isYou && "you")} key={entry.id}>
                             <div className="leaderboard-rank">{index + 1}</div>
-                            {renderProfileAvatar(entry.name, entry.avatarUrl, "friend-avatar")}
+                            {renderProfileAvatar(entry.name, entry.avatarUrl, entry.selectedEmblems, "friend-avatar")}
                             <div className="leaderboard-copy">
                               <div className="friend-name-line">
                                 <strong>{entry.name}</strong>
@@ -1776,7 +1891,7 @@ export default function HomePage() {
                                   }
                                   type="button"
                                 >
-                                  {renderProfileAvatar(friend.friendName, friend.avatarUrl, "friend-avatar")}
+                                  {renderProfileAvatar(friend.friendName, friend.avatarUrl, friend.selectedEmblems, "friend-avatar")}
                                   <div>
                                     <div className="friend-name-line">
                                       <strong>{friend.friendName}</strong>
@@ -2195,12 +2310,33 @@ function initialsForName(name: string) {
     .join("") || "?";
 }
 
-function renderProfileAvatar(name: string, avatarUrl: string | null | undefined, className: string) {
-  if (avatarUrl) {
-    return <img alt={`${name} profile`} className={clsx(className, "profile-avatar-image")} src={avatarUrl} />;
+function renderProfileAvatar(name: string, avatarUrl: string | null | undefined, selectedEmblems: string[] | null | undefined, className: string) {
+  const normalizedEmblems = (selectedEmblems ?? []).slice(0, 3);
+
+  return (
+    <div className="profile-avatar-wrap">
+      {avatarUrl ? <img alt={`${name} profile`} className={clsx(className, "profile-avatar-image")} src={avatarUrl} /> : <div className={className}>{initialsForName(name)}</div>}
+      {normalizedEmblems.length > 0 ? (
+        <div className="profile-emblem-row">
+          {normalizedEmblems.map((emblemId) => renderEmblemBadge(emblemId, "small"))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function renderEmblemBadge(emblemId: string, size: "small" | "large") {
+  const emblem = EMBLEM_DEFINITIONS.find((item) => item.id === emblemId);
+
+  if (!emblem) {
+    return null;
   }
 
-  return <div className={className}>{initialsForName(name)}</div>;
+  return (
+    <div className={clsx("emblem-badge", `emblem-tone-${emblem.tone}`, size === "small" ? "small" : "large")} key={`${emblem.id}-${size}`}>
+      <span>{emblem.mark}</span>
+    </div>
+  );
 }
 
 function renderNavIcon(view: string) {

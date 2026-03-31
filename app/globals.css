@@ -509,6 +509,61 @@ button {
   border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
 }
 
+.profile-avatar-wrap {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+}
+
+.profile-emblem-row {
+  position: absolute;
+  left: 50%;
+  bottom: -0.35rem;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.18rem;
+}
+
+.emblem-badge {
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.18);
+  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  clip-path: polygon(25% 6%, 75% 6%, 94% 50%, 75% 94%, 25% 94%, 6% 50%);
+}
+
+.emblem-badge.small {
+  width: 1rem;
+  height: 1rem;
+  font-size: 0.38rem;
+}
+
+.emblem-badge.large {
+  width: 3.25rem;
+  height: 3.25rem;
+  font-size: 0.9rem;
+}
+
+.emblem-tone-gold { background: linear-gradient(180deg, #f8d46e, #c58a1d); }
+.emblem-tone-teal { background: linear-gradient(180deg, #49d0d6, #1c8194); }
+.emblem-tone-blue { background: linear-gradient(180deg, #79b6ff, #356fb5); }
+.emblem-tone-violet { background: linear-gradient(180deg, #b38cff, #6a4cc2); }
+.emblem-tone-red { background: linear-gradient(180deg, #ff8d95, #c54453); }
+.emblem-tone-orange { background: linear-gradient(180deg, #ffb274, #c86f29); }
+.emblem-tone-pink { background: linear-gradient(180deg, #f3a7ff, #ad56b7); }
+.emblem-tone-mint { background: linear-gradient(180deg, #7be6b2, #2f8a63); }
+.emblem-tone-indigo { background: linear-gradient(180deg, #7d8eff, #4453b3); }
+.emblem-tone-cyan { background: linear-gradient(180deg, #8ee7ff, #2f97ad); }
+.emblem-tone-lime { background: linear-gradient(180deg, #bff07b, #6ca92c); }
+.emblem-tone-sunset { background: linear-gradient(180deg, #ffcf87, #ff7c73); }
+.emblem-tone-silver { background: linear-gradient(180deg, #d5dbe4, #8e99aa); }
+.emblem-tone-emerald { background: linear-gradient(180deg, #69e3a0, #19835d); }
+
 .profile-avatar-image {
   display: block;
   object-fit: cover;
@@ -1193,6 +1248,86 @@ button {
   width: min(100%, 30rem);
   display: grid;
   gap: 1rem;
+  position: relative;
+  padding: 1.2rem;
+}
+
+.xp-info-overlay {
+  z-index: 35;
+}
+
+.xp-info-close {
+  padding: 0.65rem 0.9rem;
+}
+
+.emblem-picker-overlay {
+  z-index: 36;
+}
+
+.emblem-picker-modal {
+  width: min(100%, 36rem);
+  display: grid;
+  gap: 1rem;
+  padding: 1.2rem;
+}
+
+.emblem-picker-handle {
+  width: 3.2rem;
+  height: 0.28rem;
+  border-radius: 999px;
+  margin: 0 auto 0.1rem;
+  background: color-mix(in srgb, var(--muted) 32%, transparent);
+}
+
+.emblem-selected-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.emblem-selected-slot {
+  min-height: 4.4rem;
+  display: grid;
+  place-items: center;
+  border-radius: 20px;
+  border: 1px dashed color-mix(in srgb, var(--line) 84%, transparent);
+  background: color-mix(in srgb, var(--surface-control) 92%, transparent);
+}
+
+.emblem-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.emblem-card {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  padding: 0.85rem 0.65rem;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-control) 94%, transparent);
+  text-align: center;
+  color: var(--text);
+}
+
+.emblem-card strong {
+  font-size: 0.92rem;
+}
+
+.emblem-card span:last-child {
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.emblem-card.selected {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
+  box-shadow: 0 14px 28px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.emblem-card.locked {
+  opacity: 0.52;
 }
 
 .xp-info-grid,
