@@ -315,8 +315,9 @@ button {
 
 .friends-grid .panel {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 42%),
-    var(--surface-strong);
+    radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 10%, transparent), transparent 30%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-control) 72%, var(--surface-strong)), color-mix(in srgb, var(--surface) 88%, #10151d));
+  border-color: color-mix(in srgb, var(--accent) 14%, var(--line));
   box-shadow: var(--shadow-strong);
 }
 
@@ -1494,8 +1495,9 @@ button {
 
   .friends-grid .panel {
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 42%),
-      var(--surface-strong);
+      radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 12%, transparent), transparent 32%),
+      linear-gradient(180deg, color-mix(in srgb, var(--surface-control) 78%, var(--surface-strong)), color-mix(in srgb, var(--surface) 96%, #0c1219));
+    border-color: color-mix(in srgb, var(--accent) 16%, var(--line));
   }
 
   .friend-row {
