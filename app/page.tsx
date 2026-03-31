@@ -432,6 +432,10 @@ export default function HomePage() {
     });
   }
 
+  function removeDraftEmblem(emblemId: string) {
+    setSelectedEmblemDraft((current) => current.filter((id) => id !== emblemId));
+  }
+
   async function handleSaveEmblems() {
     if (!activeProfileId) {
       return;
@@ -1122,7 +1126,21 @@ export default function HomePage() {
 
                 return (
                   <div className="emblem-selected-slot" key={slot}>
-                    {emblem ? renderEmblemBadge(emblem.id, "large") : <span className="muted">Empty</span>}
+                    {emblem ? (
+                      <button
+                        className="emblem-selected-button"
+                        onClick={() => removeDraftEmblem(emblem.id)}
+                        type="button"
+                      >
+                        {renderEmblemBadge(emblem.id, "large")}
+                        <span className="emblem-selected-remove" aria-hidden="true">
+                          ×
+                        </span>
+                        <span className="muted emblem-selected-hint">Tap to remove</span>
+                      </button>
+                    ) : (
+                      <span className="muted">Empty</span>
+                    )}
                   </div>
                 );
               })}
