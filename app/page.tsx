@@ -2677,7 +2677,8 @@ function renderProfileAvatar(
   selectedEmblems: string[] | null | undefined,
   className: string,
   level: number,
-  selectedAvatarBorder?: string | null
+  selectedAvatarBorder?: string | null,
+  previewOnly = false
 ) {
   const normalizedEmblems = (selectedEmblems ?? []).slice(0, 3);
   const frameTier = resolveAvatarFrameTier(level, selectedAvatarBorder);
@@ -2693,7 +2694,13 @@ function renderProfileAvatar(
       )}
     >
       <span aria-hidden="true" className="profile-avatar-accent" />
-      {avatarUrl ? <img alt={`${name} profile`} className={clsx(className, "profile-avatar-image")} src={avatarUrl} /> : <div className={className}>{initialsForName(name)}</div>}
+      {previewOnly ? (
+        <div className={clsx(className, "avatar-frame-preview-core")} />
+      ) : avatarUrl ? (
+        <img alt={`${name} profile`} className={clsx(className, "profile-avatar-image")} src={avatarUrl} />
+      ) : (
+        <div className={className}>{initialsForName(name)}</div>
+      )}
       {normalizedEmblems.length > 0 ? (
         <div className="profile-emblem-row">
           {normalizedEmblems.map((emblemId) => renderEmblemBadge(emblemId, "small"))}
