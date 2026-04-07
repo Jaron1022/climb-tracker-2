@@ -654,6 +654,54 @@ button {
   margin-bottom: 0.2rem;
 }
 
+.friend-session-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.kudos-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--line) 88%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-control) 94%, transparent);
+  color: var(--muted);
+  padding: 0.5rem 0.85rem;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.kudos-button:hover,
+.kudos-button:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--line));
+  color: var(--text);
+}
+
+.kudos-button:active {
+  transform: translateY(1px) scale(0.985);
+}
+
+.kudos-button.liked {
+  border-color: color-mix(in srgb, var(--accent) 44%, transparent);
+  background: color-mix(in srgb, var(--accent-soft) 82%, var(--surface-control));
+  color: var(--accent-deep);
+}
+
+.kudos-button:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.kudos-button-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
 .friend-session-toggle {
   justify-self: start;
   padding-left: 0;

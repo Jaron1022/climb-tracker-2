@@ -57,6 +57,19 @@ export type FriendshipRow = {
   responded_at: string | null;
 };
 
+export type SessionKudosRow = {
+  id: string;
+  sender_id: string;
+  recipient_id: string;
+  climbed_on: string;
+  created_at: string;
+};
+
+export type SessionKudosSummary = {
+  count: number;
+  likedByViewer: boolean;
+};
+
 export type IncomingFriendRequest = {
   friendshipId: string;
   requesterId: string;

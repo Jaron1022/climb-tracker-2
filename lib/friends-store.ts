@@ -8,7 +8,9 @@ import type {
   FriendSummary,
   IncomingFriendRequest,
   Grade,
-  ProfileSearchRow
+  ProfileSearchRow,
+  SessionKudosRow,
+  SessionKudosSummary
 } from "@/lib/types";
 
 export async function searchProfiles(query: string, currentUserId: string) {
@@ -221,6 +223,76 @@ export async function fetchFriendFeed(userId: string) {
     ...climb,
     friend_name: nameMap.get(climb.profile_id) ?? "Climber"
   })) as FriendFeedClimb[];
+}
+
+export async function fetchSessionKudos(userId: string, feed: FriendFeedClimb[]) {
+  if (feed.length === 0) {
+    return {} as Record<string, SessionKudosSummary>;
+  }
+
+  const supabase = getSupabaseBrowserClient() as any;
+  const recipientIds = Array.from(new Set(feed.map((climb) => climb.profile_id)));
+  const sessionIds = new Set(feed.map((climb) => `${climb.profile_id}:${climb.climbed_on}`));
+  const climbedOnValues = Array.from(new Set(feed.map((climb) => climb.climbed_on))).sort();
+  const earliestDate = climbedOnValues[0];
+  const latestDate = climbedOnValues[climbedOnValues.length - 1];
+
+  const { data, error } = await supabase
+    .from("session_kudos")
+    .select("*")
+    .in("recipient_id", recipientIds)
+    .gte("climbed_on", earliestDate)
+    .lte("climbed_on", latestDate);
+
+  if (error) {
+    throw error;
+  }
+
+  const summaries: Record<string, SessionKudosSummary> = {};
+  ((data ?? []) as SessionKudosRow[]).forEach((row) => {
+    const sessionId = `${row.recipient_id}:${row.climbed_on}`;
+    if (!sessionIds.has(sessionId)) {
+      return;
+    }
+
+    const current = summaries[sessionId] ?? { count: 0, likedByViewer: false };
+    current.count += 1;
+    if (row.sender_id === userId) {
+      current.likedByViewer = true;
+    }
+    summaries[sessionId] = current;
+  });
+
+  return summaries;
+}
+
+export async function toggleSessionKudos(userId: string, recipientId: string, climbedOn: string, shouldLike: boolean) {
+  const supabase = getSupabaseBrowserClient() as any;
+
+  if (shouldLike) {
+    const { error } = await supabase.from("session_kudos").insert({
+      sender_id: userId,
+      recipient_id: recipientId,
+      climbed_on: climbedOn
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return;
+  }
+
+  const { error } = await supabase
+    .from("session_kudos")
+    .delete()
+    .eq("sender_id", userId)
+    .eq("recipient_id", recipientId)
+    .eq("climbed_on", climbedOn);
+
+  if (error) {
+    throw error;
+  }
 }
 
 export function buildLeaderboardScore(weeklyXp7: number, activeDays7: number) {

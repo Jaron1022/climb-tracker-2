@@ -8,6 +8,7 @@ import { CLIMB_COLORS, CLIMB_GRADES, DEFAULT_FORM, FLASH_XP_MULTIPLIER, GRADE_MO
 import { uploadPhoto } from "@/lib/local-store";
 import {
   buildLeaderboardScore,
+  fetchSessionKudos,
   getLeaderboardScoreBreakdown,
   fetchFriendshipsForUser,
   fetchFriendFeed,
@@ -16,7 +17,8 @@ import {
   removeFriendship,
   respondToFriendRequest,
   searchProfiles,
-  sendFriendRequest
+  sendFriendRequest,
+  toggleSessionKudos
 } from "@/lib/friends-store";
 import { hasSupabaseConfig } from "@/lib/supabase/client";
 import {
@@ -48,6 +50,7 @@ import type {
   IncomingFriendRequest,
   ProfileRow,
   ProfileSearchRow,
+  SessionKudosSummary,
   StyleTag
 } from "@/lib/types";
 import { buildProgressStats, buildStats, prettyDate, PROGRESS_RANGES, type ProgressRange } from "@/lib/stats";
@@ -96,8 +99,10 @@ export default function HomePage() {
   const [incomingRequests, setIncomingRequests] = useState<IncomingFriendRequest[]>([]);
   const [friends, setFriends] = useState<FriendSummary[]>([]);
   const [friendFeed, setFriendFeed] = useState<FriendFeedClimb[]>([]);
+  const [sessionKudosById, setSessionKudosById] = useState<Record<string, SessionKudosSummary>>({});
   const [friendFeedVisibleCount, setFriendFeedVisibleCount] = useState(20);
   const [expandedFriendSessionId, setExpandedFriendSessionId] = useState("");
+  const [activeKudosSessionId, setActiveKudosSessionId] = useState("");
   const [pendingOutgoingFriendIds, setPendingOutgoingFriendIds] = useState<string[]>([]);
   const [friendsTab, setFriendsTab] = useState<"discover" | "requests" | "circle" | "leaderboard">("circle");
   const [expandedLeaderboardId, setExpandedLeaderboardId] = useState("");
@@ -118,17 +123,28 @@ export default function HomePage() {
           fetchFriends(userId),
           fetchFriendFeed(userId)
         ]);
+        let kudosBySession: Record<string, SessionKudosSummary> = {};
+        try {
+          kudosBySession = await fetchSessionKudos(userId, feed);
+        } catch (likesErr) {
+          const likesMessage = getMessage(likesErr).toLowerCase();
+          if (!likesMessage.includes("session_kudos")) {
+            throw likesErr;
+          }
+        }
         setPendingOutgoingFriendIds(
           friendships.filter((item) => item.requester_id === userId && item.status === "pending").map((item) => item.addressee_id)
         );
         setIncomingRequests(requests);
         setFriends(acceptedFriends);
         setFriendFeed(feed);
+        setSessionKudosById(kudosBySession);
       } catch (err) {
         setPendingOutgoingFriendIds([]);
         setIncomingRequests([]);
         setFriends([]);
         setFriendFeed([]);
+        setSessionKudosById({});
 
         const message = getMessage(err);
         if (message.toLowerCase().includes("friendships")) {
@@ -154,6 +170,7 @@ export default function HomePage() {
       setIncomingRequests([]);
       setFriends([]);
       setFriendFeed([]);
+      setSessionKudosById({});
       setPendingOutgoingFriendIds([]);
       setEditingClimb(null);
       setIsComposerOpen(false);
@@ -825,7 +842,7 @@ export default function HomePage() {
   );
   const visibleHistoryClimbs = filteredClimbs.slice(0, historyVisibleCount);
   const hasMoreHistory = filteredClimbs.length > historyVisibleCount;
-  const friendSessions = useMemo(() => buildFriendSessions(friendFeed), [friendFeed]);
+  const friendSessions = useMemo(() => buildFriendSessions(friendFeed, sessionKudosById), [friendFeed, sessionKudosById]);
   const visibleFriendFeed = friendSessions.slice(0, friendFeedVisibleCount);
   const hasMoreFriendFeed = friendSessions.length > friendFeedVisibleCount;
   const canSaveClimb = Boolean(activeProfileId) && !loading && !booting;
@@ -889,6 +906,36 @@ export default function HomePage() {
     }
 
     await hydrateFriendState(activeProfileId);
+  }
+
+  async function handleToggleSessionKudos(sessionId: string, recipientId: string, climbedOn: string, likedByViewer: boolean) {
+    if (!activeProfileId || activeProfileId === recipientId || activeKudosSessionId === sessionId) {
+      return;
+    }
+
+    const previous = sessionKudosById[sessionId] ?? { count: 0, likedByViewer: false };
+    const next = likedByViewer
+      ? { count: Math.max(0, previous.count - 1), likedByViewer: false }
+      : { count: previous.count + 1, likedByViewer: true };
+
+    setActiveKudosSessionId(sessionId);
+    setSessionKudosById((current) => ({
+      ...current,
+      [sessionId]: next
+    }));
+
+    try {
+      setError("");
+      await toggleSessionKudos(activeProfileId, recipientId, climbedOn, !likedByViewer);
+    } catch (err) {
+      setSessionKudosById((current) => ({
+        ...current,
+        [sessionId]: previous
+      }));
+      setError(getMessage(err));
+    } finally {
+      setActiveKudosSessionId("");
+    }
   }
 
   async function handleSendFriendRequest(targetProfileId: string) {
@@ -2191,13 +2238,28 @@ export default function HomePage() {
                                       <span className="mini-badge">Top {session.hardestLabel}</span>
                                       {session.flashCount > 0 ? <span className="mini-badge ready">{session.flashCount} flash{session.flashCount > 1 ? "es" : ""}</span> : null}
                                     </div>
-                                    <button
-                                      className="text-button friend-session-toggle"
-                                      onClick={() => setExpandedFriendSessionId((current) => (current === session.id ? "" : session.id))}
-                                      type="button"
-                                    >
-                                      {isExpanded ? "Hide climbs" : "View climbs"}
-                                    </button>
+                                    <div className="friend-session-actions">
+                                      <button
+                                        className={clsx("kudos-button", session.likedByViewer && "liked")}
+                                        disabled={activeKudosSessionId === session.id || session.friendId === activeProfileId}
+                                        onClick={() =>
+                                          handleToggleSessionKudos(session.id, session.friendId, session.climbedOn, session.likedByViewer)
+                                        }
+                                        type="button"
+                                      >
+                                        <span className="kudos-button-icon" aria-hidden="true">
+                                          ♥
+                                        </span>
+                                        <span>{session.kudosCount > 0 ? `${session.kudosCount} kudos` : "Give kudos"}</span>
+                                      </button>
+                                      <button
+                                        className="text-button friend-session-toggle"
+                                        onClick={() => setExpandedFriendSessionId((current) => (current === session.id ? "" : session.id))}
+                                        type="button"
+                                      >
+                                        {isExpanded ? "Hide climbs" : "View climbs"}
+                                      </button>
+                                    </div>
                                     {isExpanded ? (
                                       <div className="friend-session-climb-list">
                                         {session.climbs.map((climb) =>
@@ -2720,7 +2782,7 @@ function getColorChipClass(value: string) {
   return "";
 }
 
-function buildFriendSessions(climbs: FriendFeedClimb[]) {
+function buildFriendSessions(climbs: FriendFeedClimb[], sessionKudosById: Record<string, SessionKudosSummary> = {}) {
   const sessions = new Map<
     string,
     {
@@ -2783,6 +2845,8 @@ function buildFriendSessions(climbs: FriendFeedClimb[]) {
       ...session,
       headline: `${session.sendCount} sends`,
       photoUrls: buildSessionPhotoCollage(session.climbs),
+      kudosCount: sessionKudosById[session.id]?.count ?? 0,
+      likedByViewer: sessionKudosById[session.id]?.likedByViewer ?? false,
       climbs: session.climbs.slice().sort((left, right) => climbSortScore(right) - climbSortScore(left))
     }))
     .sort((left, right) => {

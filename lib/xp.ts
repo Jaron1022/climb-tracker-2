@@ -20,6 +20,8 @@ export const STYLE_TAGS = [
   "vertical",
   "overhang",
   "roof",
+  "dihedral",
+  "arete",
   "crimpy",
   "sloper",
   "pinchy",
@@ -39,7 +41,7 @@ export const CLIMB_COLORS = ["purple", "black", "white", "yellow", "red", "blue"
 export const STYLE_TAG_GROUPS = [
   {
     label: "Wall angle",
-    tags: ["slab", "vertical", "overhang", "roof"] as const
+    tags: ["slab", "vertical", "overhang", "roof", "dihedral", "arete"] as const
   },
   {
     label: "Hold type",

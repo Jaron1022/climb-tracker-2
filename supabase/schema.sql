@@ -48,14 +48,27 @@ create table if not exists public.friendships (
   check (requester_id <> addressee_id)
 );
 
+create table if not exists public.session_kudos (
+  id uuid primary key default gen_random_uuid(),
+  sender_id uuid not null references public.profiles (id) on delete cascade,
+  recipient_id uuid not null references public.profiles (id) on delete cascade,
+  climbed_on date not null,
+  created_at timestamptz not null default timezone('utc'::text, now()),
+  check (sender_id <> recipient_id)
+);
+
 create index if not exists climbs_profile_id_created_at_idx on public.climbs (profile_id, climbed_on desc, created_at desc);
 create unique index if not exists friendships_unique_pair_idx on public.friendships (least(requester_id, addressee_id), greatest(requester_id, addressee_id));
 create index if not exists friendships_requester_idx on public.friendships (requester_id, status, created_at desc);
 create index if not exists friendships_addressee_idx on public.friendships (addressee_id, status, created_at desc);
+create unique index if not exists session_kudos_unique_session_like_idx on public.session_kudos (sender_id, recipient_id, climbed_on);
+create index if not exists session_kudos_recipient_idx on public.session_kudos (recipient_id, climbed_on desc, created_at desc);
+create index if not exists session_kudos_sender_idx on public.session_kudos (sender_id, created_at desc);
 
 alter table public.profiles enable row level security;
 alter table public.climbs enable row level security;
 alter table public.friendships enable row level security;
+alter table public.session_kudos enable row level security;
 
 drop policy if exists "profiles_select_own" on public.profiles;
 create policy "profiles_select_own"
@@ -148,3 +161,46 @@ create policy "friendships_delete_own"
 on public.friendships
 for delete
 using (auth.uid() = requester_id or auth.uid() = addressee_id);
+
+drop policy if exists "session_kudos_select_friends" on public.session_kudos;
+create policy "session_kudos_select_friends"
+on public.session_kudos
+for select
+using (
+  auth.uid() = sender_id
+  or auth.uid() = recipient_id
+  or exists (
+    select 1
+    from public.friendships
+    where friendships.status = 'accepted'
+      and (
+        (friendships.requester_id = auth.uid() and friendships.addressee_id = session_kudos.recipient_id)
+        or
+        (friendships.addressee_id = auth.uid() and friendships.requester_id = session_kudos.recipient_id)
+      )
+  )
+);
+
+drop policy if exists "session_kudos_insert_own" on public.session_kudos;
+create policy "session_kudos_insert_own"
+on public.session_kudos
+for insert
+with check (
+  auth.uid() = sender_id
+  and exists (
+    select 1
+    from public.friendships
+    where friendships.status = 'accepted'
+      and (
+        (friendships.requester_id = auth.uid() and friendships.addressee_id = session_kudos.recipient_id)
+        or
+        (friendships.addressee_id = auth.uid() and friendships.requester_id = session_kudos.recipient_id)
+      )
+  )
+);
+
+drop policy if exists "session_kudos_delete_own" on public.session_kudos;
+create policy "session_kudos_delete_own"
+on public.session_kudos
+for delete
+using (auth.uid() = sender_id);
