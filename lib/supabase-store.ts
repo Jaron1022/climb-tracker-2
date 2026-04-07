@@ -1,6 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import type { ClimbInsert, ClimbRow, ProfileRow, ProjectInsert, ProjectRow } from "@/lib/types";
+import type { ClimbInsert, ClimbRow, ProfileRow, ProjectInsert, ProjectRow, SessionNoteRow } from "@/lib/types";
 
 export async function getCurrentUser() {
   const supabase = getSupabaseBrowserClient() as any;
@@ -263,6 +263,60 @@ export async function fetchProjectsForUser(userId: string) {
   }
 
   return (data ?? []) as ProjectRow[];
+}
+
+export async function fetchSessionNotesForUser(userId: string) {
+  const supabase = getSupabaseBrowserClient() as any;
+  const { data, error } = await supabase
+    .from("session_notes")
+    .select("*")
+    .eq("profile_id", userId)
+    .order("session_on", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as SessionNoteRow[];
+}
+
+export async function saveSessionNoteForUser(userId: string, sessionOn: string, note: string) {
+  const supabase = getSupabaseBrowserClient() as any;
+  const trimmed = note.trim();
+
+  if (!trimmed) {
+    const { error } = await supabase
+      .from("session_notes")
+      .delete()
+      .eq("profile_id", userId)
+      .eq("session_on", sessionOn);
+
+    if (error) {
+      throw error;
+    }
+
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("session_notes")
+    .upsert(
+      {
+        profile_id: userId,
+        session_on: sessionOn,
+        note: trimmed,
+        updated_at: new Date().toISOString()
+      },
+      { onConflict: "profile_id,session_on" }
+    )
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as SessionNoteRow;
 }
 
 export async function saveClimbForUser(userId: string, payload: Omit<ClimbInsert, "profile_id">) {

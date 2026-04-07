@@ -74,6 +74,15 @@ export type ProjectInsert = {
   session_count: number;
 };
 
+export type SessionNoteRow = {
+  id: string;
+  profile_id: string;
+  session_on: string;
+  note: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type FriendshipStatus = "pending" | "accepted" | "declined";
 
 export type FriendshipRow = {
@@ -105,6 +114,16 @@ export type IncomingFriendRequest = {
   requesterAvatarUrl: string | null;
   requesterSelectedEmblems: string[];
   requesterSelectedAvatarBorder: string | null;
+  createdAt: string;
+};
+
+export type ReceivedKudosInboxItem = {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderAvatarUrl: string | null;
+  senderSelectedEmblems: string[];
+  climbedOn: string;
   createdAt: string;
 };
 
@@ -143,5 +162,6 @@ export type ClimbForm = {
   styleTags: StyleTag[];
   color: string;
   notes: string;
+  sessionNote: string;
   date: string;
 };

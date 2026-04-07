@@ -8,6 +8,8 @@ import { CLIMB_COLORS, CLIMB_GRADES, FLASH_XP_MULTIPLIER, GRADE_MODIFIER_MULTIPL
 import { uploadPhoto } from "@/lib/local-store";
 import {
   buildLeaderboardScore,
+  fetchFriendSessionNotes,
+  fetchReceivedKudosInbox,
   fetchSessionKudos,
   fetchReceivedSessionKudos,
   getLeaderboardScoreBreakdown,
@@ -30,10 +32,12 @@ import {
   fetchClimbsForUser,
   fetchProjectsForUser,
   fetchProfile,
+  fetchSessionNotesForUser,
   getCurrentUser,
   requestPasswordReset,
   saveClimbForUser,
   saveProjectForUser,
+  saveSessionNoteForUser,
   signInWithEmail,
   signOutUser,
   signUpWithEmail,
@@ -57,6 +61,8 @@ import type {
   ProfileSearchRow,
   ProjectInsert,
   ProjectRow,
+  ReceivedKudosInboxItem,
+  SessionNoteRow,
   SessionKudosSummary,
   StyleTag
 } from "@/lib/types";
@@ -68,6 +74,7 @@ export default function HomePage() {
   const [climbs, setClimbs] = useState<ClimbRow[]>([]);
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [currentUserEmail, setCurrentUserEmail] = useState("");
+  const [sessionNotesByDate, setSessionNotesByDate] = useState<Record<string, string>>({});
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -103,14 +110,17 @@ export default function HomePage() {
   const [selectedThemeDraft, setSelectedThemeDraft] = useState("sky");
   const [historyGradeFilter, setHistoryGradeFilter] = useState<"All" | ClimbRow["grade"]>("All");
   const [historyTagQuery, setHistoryTagQuery] = useState("");
+  const [historyTab, setHistoryTab] = useState<"climbs" | "sessions">("climbs");
   const [historyVisibleCount, setHistoryVisibleCount] = useState(20);
   const [friendSearch, setFriendSearch] = useState("");
   const [friendResults, setFriendResults] = useState<ProfileSearchRow[]>([]);
   const [incomingRequests, setIncomingRequests] = useState<IncomingFriendRequest[]>([]);
   const [friends, setFriends] = useState<FriendSummary[]>([]);
   const [friendFeed, setFriendFeed] = useState<FriendFeedClimb[]>([]);
+  const [friendSessionNotesById, setFriendSessionNotesById] = useState<Record<string, string>>({});
   const [sessionKudosById, setSessionKudosById] = useState<Record<string, SessionKudosSummary>>({});
   const [receivedSessionKudosByDate, setReceivedSessionKudosByDate] = useState<Record<string, number>>({});
+  const [receivedKudosInbox, setReceivedKudosInbox] = useState<ReceivedKudosInboxItem[]>([]);
   const [friendFeedVisibleCount, setFriendFeedVisibleCount] = useState(20);
   const [expandedFriendSessionId, setExpandedFriendSessionId] = useState("");
   const [activeKudosSessionId, setActiveKudosSessionId] = useState("");
@@ -119,6 +129,7 @@ export default function HomePage() {
   const [expandedLeaderboardId, setExpandedLeaderboardId] = useState("");
   const [progressRange, setProgressRange] = useState<ProgressRange>("ALL");
   const [isLandscapePhone, setIsLandscapePhone] = useState(false);
+  const [isInboxOpen, setIsInboxOpen] = useState(false);
   const feedbackToast = error
     ? { type: "error" as const, text: error }
     : success
@@ -135,12 +146,21 @@ export default function HomePage() {
           fetchFriendFeed(userId)
         ]);
         let kudosBySession: Record<string, SessionKudosSummary> = {};
+        let notesBySession: Record<string, string> = {};
         try {
           kudosBySession = await fetchSessionKudos(userId, feed);
         } catch (likesErr) {
           const likesMessage = getMessage(likesErr).toLowerCase();
           if (!likesMessage.includes("session_kudos")) {
             throw likesErr;
+          }
+        }
+        try {
+          notesBySession = await fetchFriendSessionNotes(feed);
+        } catch (notesErr) {
+          const notesMessage = getMessage(notesErr).toLowerCase();
+          if (!notesMessage.includes("session_notes")) {
+            throw notesErr;
           }
         }
         setPendingOutgoingFriendIds(
@@ -150,12 +170,14 @@ export default function HomePage() {
         setFriends(acceptedFriends);
         setFriendFeed(feed);
         setSessionKudosById(kudosBySession);
+        setFriendSessionNotesById(notesBySession);
       } catch (err) {
         setPendingOutgoingFriendIds([]);
         setIncomingRequests([]);
         setFriends([]);
         setFriendFeed([]);
         setSessionKudosById({});
+        setFriendSessionNotesById({});
 
         const message = getMessage(err);
         if (message.toLowerCase().includes("friendships")) {
@@ -177,13 +199,16 @@ export default function HomePage() {
       setAccountDisplayName("");
       setClimbs([]);
       setProjects([]);
+      setSessionNotesByDate({});
       setFriendSearch("");
       setFriendResults([]);
       setIncomingRequests([]);
       setFriends([]);
       setFriendFeed([]);
       setSessionKudosById({});
+      setFriendSessionNotesById({});
       setReceivedSessionKudosByDate({});
+      setReceivedKudosInbox([]);
       setPendingOutgoingFriendIds([]);
       setEditingClimb(null);
       setIsComposerOpen(false);
@@ -209,6 +234,16 @@ export default function HomePage() {
       setProjects([]);
     }
     try {
+      const fetchedSessionNotes = await fetchSessionNotesForUser(userId);
+      setSessionNotesByDate(sessionNotesToMap(fetchedSessionNotes));
+    } catch (err) {
+      const message = getMessage(err).toLowerCase();
+      if (!message.includes("session_notes")) {
+        throw err;
+      }
+      setSessionNotesByDate({});
+    }
+    try {
       const receivedKudos = await fetchReceivedSessionKudos(userId);
       setReceivedSessionKudosByDate(receivedKudos);
     } catch (err) {
@@ -217,6 +252,16 @@ export default function HomePage() {
         throw err;
       }
       setReceivedSessionKudosByDate({});
+    }
+    try {
+      const inboxKudos = await fetchReceivedKudosInbox(userId);
+      setReceivedKudosInbox(inboxKudos);
+    } catch (err) {
+      const message = getMessage(err).toLowerCase();
+      if (!message.includes("session_kudos")) {
+        throw err;
+      }
+      setReceivedKudosInbox([]);
     }
     await hydrateFriendState(userId);
   }, [hydrateFriendState]);
@@ -708,6 +753,17 @@ export default function HomePage() {
       } else {
         await saveClimbForUser(activeProfileId, climbPayload);
       }
+      await saveSessionNoteForUser(activeProfileId, form.date, form.sessionNote);
+      setSessionNotesByDate((current) => {
+        const next = { ...current };
+        const trimmed = form.sessionNote.trim();
+        if (trimmed) {
+          next[form.date] = trimmed;
+        } else {
+          delete next[form.date];
+        }
+        return next;
+      });
       if (projectPendingSend) {
         await deleteProjectForUser(activeProfileId, projectPendingSend.id);
         setProjectPendingSend(null);
@@ -728,6 +784,43 @@ export default function HomePage() {
       setShowSaveBurst(true);
       window.setTimeout(() => setShowSaveBurst(false), 1600);
       setSuccess(editingClimb ? "Climb updated." : "Climb logged.");
+    } catch (err) {
+      setError(getMessage(err));
+    } finally {
+      setLoading(false);
+      setActiveAction("");
+    }
+  }
+
+  async function handleDemoAccountSignIn() {
+    try {
+      setLoading(true);
+      setActiveAction("auth");
+      setError("");
+      setSuccess("");
+
+      const response = await fetch("/api/demo-account", {
+        method: "POST"
+      });
+      const payload = (await response.json()) as {
+        ok?: boolean;
+        email?: string;
+        password?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.email || !payload.password) {
+        throw new Error(payload.error || "Could not prepare the demo account.");
+      }
+
+      const user = await signInWithEmail(payload.email, payload.password);
+      setCurrentUserEmail(user.email ?? "");
+      await syncUserData(user.id);
+      setAuthMode("signin");
+      setEmail("");
+      setPassword("");
+      setDisplayName("");
+      setSuccess("Signed into the demo account.");
     } catch (err) {
       setError(getMessage(err));
     } finally {
@@ -858,7 +951,11 @@ export default function HomePage() {
   function openComposer() {
     setEditingClimb(null);
     setProjectPendingSend(null);
-    setForm(createDefaultForm());
+    const nextForm = createDefaultForm();
+    setForm({
+      ...nextForm,
+      sessionNote: sessionNotesByDate[nextForm.date] ?? ""
+    });
     setPhotoFile(null);
     if (photoInputRef.current) {
       photoInputRef.current.value = "";
@@ -893,6 +990,7 @@ export default function HomePage() {
       styleTags: climb.style_tags,
       color: climb.wall_name ?? "",
       notes: climb.notes ?? "",
+      sessionNote: sessionNotesByDate[climb.climbed_on] ?? "",
       date: climb.climbed_on
     });
     setPhotoFile(null);
@@ -915,6 +1013,7 @@ export default function HomePage() {
       styleTags: project.style_tags,
       color: project.wall_name ?? "",
       notes: project.notes ?? "",
+      sessionNote: sessionNotesByDate[formatLocalDateKey(new Date())] ?? "",
       date: formatLocalDateKey(new Date())
     });
     setPhotoFile(null);
@@ -929,7 +1028,7 @@ export default function HomePage() {
   }
 
   const stats = useMemo(() => buildStats(climbs), [climbs]);
-  const progressStats = useMemo(() => buildProgressStats(climbs, progressRange), [climbs, progressRange]);
+  const progressStats = useMemo(() => buildProgressStats(climbs, progressRange, sessionNotesByDate), [climbs, progressRange, sessionNotesByDate]);
   const dailyRecapKudosCount = progressStats.dailyRecap ? receivedSessionKudosByDate[progressStats.dailyRecap.climbedOn] ?? 0 : 0;
   const unlockedEmblems = useMemo(() => getUnlockedEmblems(climbs), [climbs]);
   const unlockedEmblemIds = useMemo(() => unlockedEmblems.map((emblem) => emblem.id), [unlockedEmblems]);
@@ -1027,7 +1126,11 @@ export default function HomePage() {
   );
   const visibleHistoryClimbs = filteredClimbs.slice(0, historyVisibleCount);
   const hasMoreHistory = filteredClimbs.length > historyVisibleCount;
-  const friendSessions = useMemo(() => buildFriendSessions(friendFeed, sessionKudosById), [friendFeed, sessionKudosById]);
+  const friendSessions = useMemo(
+    () => buildFriendSessions(friendFeed, sessionKudosById, friendSessionNotesById),
+    [friendFeed, sessionKudosById, friendSessionNotesById]
+  );
+  const historySessions = useMemo(() => buildHistorySessions(climbs, sessionNotesByDate), [climbs, sessionNotesByDate]);
   const friendLookup = useMemo(
     () =>
       new Map(
@@ -1043,6 +1146,25 @@ export default function HomePage() {
   );
   const visibleFriendFeed = friendSessions.slice(0, friendFeedVisibleCount);
   const hasMoreFriendFeed = friendSessions.length > friendFeedVisibleCount;
+  const inboxCount = incomingRequests.length + receivedKudosInbox.length;
+  const inboxItems = useMemo(
+    () =>
+      [
+        ...incomingRequests.map((request) => ({
+          id: `request:${request.friendshipId}`,
+          type: "request" as const,
+          createdAt: request.createdAt,
+          request
+        })),
+        ...receivedKudosInbox.map((item) => ({
+          id: `kudos:${item.id}`,
+          type: "kudos" as const,
+          createdAt: item.createdAt,
+          kudos: item
+        }))
+      ].sort((left, right) => right.createdAt.localeCompare(left.createdAt)),
+    [incomingRequests, receivedKudosInbox]
+  );
   const canSaveClimb = Boolean(activeProfileId) && !loading && !booting;
   const selectedGradeCounts = progressRange === "ALL" ? stats.completedByGrade : progressStats.completedByGrade;
   const selectedGradeMax = useMemo(
@@ -1096,6 +1218,139 @@ export default function HomePage() {
   function clearHistoryFilters() {
     setHistoryGradeFilter("All");
     setHistoryTagQuery("");
+  }
+
+  function renderHistorySessionsSection() {
+    return (
+      <section className="panel history-panel">
+        <div className="section-title-row">
+          <div>
+            <p className="eyebrow">Sessions</p>
+            <h2>Climbing days</h2>
+          </div>
+          <span className="badge">{historySessions.length}</span>
+        </div>
+
+        <p className="muted history-summary">See each climbing day grouped together with XP, top send, photos, and your session note.</p>
+
+        <div className="feed history-feed">
+          {historySessions.length === 0 ? (
+            <p className="empty-copy">No sessions yet. Log a climb and your days will start grouping here.</p>
+          ) : (
+            historySessions.map((session) => {
+              const isExpanded = expandedFriendSessionId === session.id;
+              const collageClass =
+                session.photoUrls.length === 4
+                  ? "is-four"
+                  : session.photoUrls.length === 3
+                    ? "is-three"
+                    : session.photoUrls.length === 2
+                      ? "is-two"
+                      : "is-one";
+
+              return (
+                <article className="climb-card friend-session-card" key={session.id}>
+                  {session.photoUrls.length === 1 ? (
+                    <button className="friend-session-preview" onClick={() => setSelectedPhotoUrl(session.photoUrls[0])} type="button">
+                      <img alt={`Session on ${prettyDate(session.climbedOn)}`} className="friend-session-preview-image" src={session.photoUrls[0]} />
+                    </button>
+                  ) : session.photoUrls.length > 1 ? (
+                    <button
+                      className={clsx("friend-session-preview", "friend-session-collage", collageClass)}
+                      onClick={() => setSelectedPhotoUrl(session.photoUrls[0])}
+                      type="button"
+                    >
+                      {session.photoUrls.map((photoUrl, index) => (
+                        <span className={clsx("friend-session-collage-cell", `cell-${index + 1}`)} key={`${session.id}-${photoUrl}`}>
+                          <img alt={`Session photo ${index + 1}`} className="friend-session-collage-image" src={photoUrl} />
+                        </span>
+                      ))}
+                    </button>
+                  ) : null}
+                  <div className="climb-content">
+                    <div className="section-title-row">
+                      <div>
+                        <p className="eyebrow">{prettyDate(session.climbedOn)}</p>
+                        <h3>{session.headline}</h3>
+                      </div>
+                    </div>
+                    <div className="tag-row friend-session-summary">
+                      <span className="mini-badge">{session.sendCount} sends</span>
+                      <span className="mini-badge ready">+{session.totalXp} XP</span>
+                      <span className="mini-badge">Top {session.hardestLabel}</span>
+                      {session.flashCount > 0 ? <span className="mini-badge ready">{session.flashCount} flash{session.flashCount > 1 ? "es" : ""}</span> : null}
+                    </div>
+                    {session.note ? <p className="muted helper-copy friend-session-note">{session.note}</p> : null}
+                    <div className="friend-session-actions">
+                      <button
+                        className="text-button friend-session-toggle"
+                        onClick={() => setExpandedFriendSessionId((current) => (current === session.id ? "" : session.id))}
+                        type="button"
+                      >
+                        {isExpanded ? "Hide climbs" : "View climbs"}
+                      </button>
+                    </div>
+                    {isExpanded ? (
+                      <div className="friend-session-climb-list">
+                        {session.climbs.map((climb) =>
+                          climb.photo_url ? (
+                            <button
+                              className="friend-session-climb-row is-clickable"
+                              key={climb.id}
+                              onClick={() => setSelectedPhotoUrl(climb.photo_url)}
+                              type="button"
+                            >
+                              <div>
+                                <div className="history-title-row">
+                                  <strong>
+                                    {climb.grade}
+                                    {climb.grade_modifier ?? ""}
+                                  </strong>
+                                  {climb.wall_name ? (
+                                    <span className={clsx("history-description", getColorChipClass(climb.wall_name))}>
+                                      {climb.wall_name}
+                                    </span>
+                                  ) : null}
+                                </div>
+                                {climb.notes ? <p className="muted">{climb.notes}</p> : null}
+                              </div>
+                              <div className="friend-session-climb-aside">
+                                {climb.flashed ? <span className="mini-badge ready">flash</span> : null}
+                                <span className="friend-session-photo-hint">view photo</span>
+                              </div>
+                            </button>
+                          ) : (
+                            <div className="friend-session-climb-row" key={climb.id}>
+                              <div>
+                                <div className="history-title-row">
+                                  <strong>
+                                    {climb.grade}
+                                    {climb.grade_modifier ?? ""}
+                                  </strong>
+                                  {climb.wall_name ? (
+                                    <span className={clsx("history-description", getColorChipClass(climb.wall_name))}>
+                                      {climb.wall_name}
+                                    </span>
+                                  ) : null}
+                                </div>
+                                {climb.notes ? <p className="muted">{climb.notes}</p> : null}
+                              </div>
+                              <div className="friend-session-climb-aside">
+                                {climb.flashed ? <span className="mini-badge ready">flash</span> : null}
+                              </div>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                </article>
+              );
+            })
+          )}
+        </div>
+      </section>
+    );
   }
 
   async function refreshFriendsView() {
@@ -1587,6 +1842,76 @@ export default function HomePage() {
           </div>
         </section>
       ) : null}
+      {isInboxOpen ? (
+        <section className="lightbox friend-profile-overlay" aria-label="Inbox" role="dialog">
+          <div className="panel friend-profile-modal inbox-modal">
+            <button className="lightbox-close" onClick={() => setIsInboxOpen(false)} type="button">
+              Close
+            </button>
+            <div className="section-title-row">
+              <div>
+                <p className="eyebrow">Inbox</p>
+                <h2>Social updates</h2>
+              </div>
+              <span className="badge">{inboxCount}</span>
+            </div>
+            {inboxItems.length === 0 ? (
+              <p className="empty-copy">Friend requests and kudos will show up here.</p>
+            ) : (
+              <div className="friends-list inbox-list">
+                {inboxItems.map((item) =>
+                  item.type === "request" ? (
+                    <article className="friend-row" key={item.id}>
+                      <div className="friend-row-main">
+                        {renderProfileAvatar(
+                          item.request.requesterName,
+                          item.request.requesterAvatarUrl,
+                          item.request.requesterSelectedEmblems,
+                          "friend-avatar"
+                        )}
+                        <div>
+                          <strong>{item.request.requesterName}</strong>
+                          <p className="muted friend-row-meta">sent you a friend request • {prettyDate(item.request.createdAt)}</p>
+                        </div>
+                      </div>
+                      <div className="friend-row-actions">
+                        <button
+                          className="primary-button friend-action-button"
+                          disabled={loading}
+                          onClick={() => void handleFriendRequestResponse(item.request.friendshipId, "accepted")}
+                          type="button"
+                        >
+                          Accept
+                        </button>
+                        <button
+                          className="secondary-button friend-action-button"
+                          disabled={loading}
+                          onClick={() => void handleFriendRequestResponse(item.request.friendshipId, "declined")}
+                          type="button"
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    </article>
+                  ) : (
+                    <article className="friend-row" key={item.id}>
+                      <div className="friend-row-main">
+                        {renderProfileAvatar(item.kudos.senderName, item.kudos.senderAvatarUrl, item.kudos.senderSelectedEmblems, "friend-avatar")}
+                        <div>
+                          <strong>{item.kudos.senderName}</strong>
+                          <p className="muted friend-row-meta">
+                            gave kudos to your {prettyDate(item.kudos.climbedOn)} session • {prettyDate(item.kudos.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                    </article>
+                  )
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      ) : null}
       <main className="shell shell-dashboard" data-app-theme={selectedTheme}>
 
       {selectedPhotoUrl ? (
@@ -1774,7 +2099,13 @@ export default function HomePage() {
                 <input
                   type="date"
                   value={form.date}
-                  onChange={(event) => setForm((current) => ({ ...current, date: event.target.value }))}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      date: event.target.value,
+                      sessionNote: sessionNotesByDate[event.target.value] ?? ""
+                    }))
+                  }
                 />
               </label>
 
@@ -1824,6 +2155,16 @@ export default function HomePage() {
                   rows={4}
                   value={form.notes}
                   onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
+                />
+              </label>
+
+              <label className="field">
+                <span>Session note</span>
+                <textarea
+                  placeholder="One note for the whole day: energy, beta, who you climbed with, what to remember next time..."
+                  rows={3}
+                  value={form.sessionNote}
+                  onChange={(event) => setForm((current) => ({ ...current, sessionNote: event.target.value }))}
                 />
               </label>
 
@@ -2100,6 +2441,9 @@ export default function HomePage() {
                 {activeAction === "password-reset" ? "Sending reset email..." : "Forgot password?"}
               </button>
             ) : null}
+            <button className="secondary-button" disabled={loading} onClick={() => void handleDemoAccountSignIn()} type="button">
+              {activeAction === "auth" && loading ? "Preparing demo..." : "Use demo account"}
+            </button>
           </form>
         </section>
       ) : (
@@ -2119,6 +2463,12 @@ export default function HomePage() {
                       : "Progress"}
               </h2>
             </div>
+            {activeProfile ? (
+              <button className="secondary-button inbox-button" onClick={() => setIsInboxOpen(true)} type="button">
+                Inbox
+                {inboxCount > 0 ? <span className="friends-tab-count">{inboxCount}</span> : null}
+              </button>
+            ) : null}
           </header>
 
           <div className="view-stage" key={activeView}>
@@ -2178,6 +2528,9 @@ export default function HomePage() {
                         {progressStats.dailyRecap.topGrade ? <span className="daily-pill">Top send {progressStats.dailyRecap.topGrade}</span> : null}
                         {dailyRecapKudosCount > 0 ? <span className="daily-pill daily-pill-kudos">{dailyRecapKudosCount} kudos</span> : null}
                       </div>
+                      {progressStats.dailyRecap.sessionNote ? (
+                        <p className="muted helper-copy">{progressStats.dailyRecap.sessionNote}</p>
+                      ) : null}
                       <div className="daily-recap-list">
                         {progressStats.dailyRecap.groups.map((group) => (
                           <div className="daily-recap-row" key={group.label}>
@@ -2401,13 +2754,25 @@ export default function HomePage() {
 
           {activeView === "history" ? (
             <section className="history-view" ref={historyTopRef}>
-              {renderHistorySection({
-                eyebrow: "History",
-                title: "All climbs",
-                climbsToShow: visibleHistoryClimbs,
-                countLabel: `${visibleHistoryClimbs.length} of ${filteredClimbs.length}`,
-                showLoadMore: true
-              })}
+              <div className="friends-tab-row history-tab-row" role="tablist" aria-label="History sections">
+                <button className={clsx("friends-tab", historyTab === "climbs" && "active")} onClick={() => setHistoryTab("climbs")} type="button">
+                  All climbs
+                  <span className="friends-tab-count">{filteredClimbs.length}</span>
+                </button>
+                <button className={clsx("friends-tab", historyTab === "sessions" && "active")} onClick={() => setHistoryTab("sessions")} type="button">
+                  Sessions
+                  <span className="friends-tab-count">{historySessions.length}</span>
+                </button>
+              </div>
+              {historyTab === "climbs"
+                ? renderHistorySection({
+                    eyebrow: "History",
+                    title: "All climbs",
+                    climbsToShow: visibleHistoryClimbs,
+                    countLabel: `${visibleHistoryClimbs.length} of ${filteredClimbs.length}`,
+                    showLoadMore: true
+                  })
+                : renderHistorySessionsSection()}
             </section>
           ) : null}
 
@@ -2719,6 +3084,7 @@ export default function HomePage() {
                                       <span className="mini-badge">Top {session.hardestLabel}</span>
                                       {session.flashCount > 0 ? <span className="mini-badge ready">{session.flashCount} flash{session.flashCount > 1 ? "es" : ""}</span> : null}
                                     </div>
+                                    {session.note ? <p className="muted helper-copy friend-session-note">{session.note}</p> : null}
                                     <div className="friend-session-actions">
                                       <button
                                         className="text-button friend-session-toggle"
@@ -3263,7 +3629,110 @@ function getColorChipClass(value: string) {
   return "";
 }
 
-function buildFriendSessions(climbs: FriendFeedClimb[], sessionKudosById: Record<string, SessionKudosSummary> = {}) {
+function sessionNotesToMap(notes: SessionNoteRow[]) {
+  return notes.reduce<Record<string, string>>((accumulator, note) => {
+    accumulator[note.session_on] = note.note;
+    return accumulator;
+  }, {});
+}
+
+function buildHistorySessions(climbs: ClimbRow[], sessionNotesByDate: Record<string, string>) {
+  const sessions = new Map<
+    string,
+    {
+      id: string;
+      climbedOn: string;
+      photoUrls: string[];
+      hardestLabel: string;
+      headline: string;
+      sendCount: number;
+      flashCount: number;
+      totalXp: number;
+      climbs: ClimbRow[];
+      bestSort: number;
+    }
+  >();
+
+  climbs.forEach((climb) => {
+    const sessionId = `history:${climb.climbed_on}`;
+    const current = sessions.get(sessionId);
+    const climbSort = climbSortScore(climb);
+
+    if (!current) {
+      sessions.set(sessionId, {
+        id: sessionId,
+        climbedOn: climb.climbed_on,
+        photoUrls: climb.photo_url ? [climb.photo_url] : [],
+        hardestLabel: `${climb.grade}${climb.grade_modifier ?? ""}`,
+        headline: `${climb.climbed_on}`,
+        sendCount: 1,
+        flashCount: Number(Boolean(climb.flashed)),
+        totalXp: climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null),
+        climbs: [climb],
+        bestSort: climbSort
+      });
+      return;
+    }
+
+    current.sendCount += 1;
+    current.flashCount += Number(Boolean(climb.flashed));
+    current.totalXp += climbToXp(climb.grade, Boolean(climb.flashed), climb.grade_modifier ?? null);
+    current.climbs.push(climb);
+
+    if (climb.photo_url && !current.photoUrls.includes(climb.photo_url) && current.photoUrls.length < 4) {
+      current.photoUrls.push(climb.photo_url);
+    }
+
+    if (climbSort > current.bestSort) {
+      current.bestSort = climbSort;
+      current.hardestLabel = `${climb.grade}${climb.grade_modifier ?? ""}`;
+    }
+  });
+
+  return Array.from(sessions.values())
+    .map((session) => ({
+      ...session,
+      headline: `${session.sendCount} sends`,
+      note: sessionNotesByDate[session.climbedOn] ?? "",
+      photoUrls: buildHistorySessionPhotoCollage(session.climbs),
+      climbs: session.climbs.slice().sort((left, right) => climbSortScore(right) - climbSortScore(left))
+    }))
+    .sort((left, right) => right.climbedOn.localeCompare(left.climbedOn));
+}
+
+function buildHistorySessionPhotoCollage(climbs: ClimbRow[]) {
+  const rankedPhotos = climbs
+    .filter((climb): climb is ClimbRow & { photo_url: string } => Boolean(climb.photo_url))
+    .slice()
+    .sort((left, right) => historySessionPhotoScore(right) - historySessionPhotoScore(left));
+
+  const uniquePhotos: string[] = [];
+  rankedPhotos.forEach((climb) => {
+    if (uniquePhotos.length >= 4) {
+      return;
+    }
+
+    if (!uniquePhotos.includes(climb.photo_url)) {
+      uniquePhotos.push(climb.photo_url);
+    }
+  });
+
+  return uniquePhotos;
+}
+
+function historySessionPhotoScore(climb: ClimbRow) {
+  const base = climbSortScore(climb) * 100;
+  const noteBonus = climb.notes ? 12 : 0;
+  const flashBonus = climb.flashed ? 6 : 0;
+  const colorBonus = climb.wall_name ? 2 : 0;
+  return base + noteBonus + flashBonus + colorBonus;
+}
+
+function buildFriendSessions(
+  climbs: FriendFeedClimb[],
+  sessionKudosById: Record<string, SessionKudosSummary> = {},
+  sessionNotesById: Record<string, string> = {}
+) {
   const sessions = new Map<
     string,
     {
@@ -3325,6 +3794,7 @@ function buildFriendSessions(climbs: FriendFeedClimb[], sessionKudosById: Record
     .map((session) => ({
       ...session,
       headline: `${session.sendCount} sends`,
+      note: sessionNotesById[session.id] ?? "",
       photoUrls: buildSessionPhotoCollage(session.climbs),
       kudosCount: sessionKudosById[session.id]?.count ?? 0,
       likedByViewer: sessionKudosById[session.id]?.likedByViewer ?? false,

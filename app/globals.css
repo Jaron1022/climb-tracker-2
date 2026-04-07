@@ -234,6 +234,7 @@ button {
 .app-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.9rem;
   margin-top: 0.5rem;
   margin-bottom: 1rem;
@@ -452,6 +453,11 @@ button {
   display: grid;
   gap: 1rem;
   padding-bottom: 6.5rem;
+}
+
+.history-tab-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 0;
 }
 
 .friends-page {
@@ -2649,6 +2655,21 @@ button {
   align-items: center;
   gap: 1rem;
   padding-right: 4.25rem;
+}
+
+.inbox-modal {
+  gap: 1rem;
+}
+
+.inbox-list {
+  max-height: min(60vh, 32rem);
+  overflow-y: auto;
+}
+
+.inbox-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
 }
 
 .friend-profile-avatar {

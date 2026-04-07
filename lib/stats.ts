@@ -57,11 +57,11 @@ export function buildStats(climbs: ClimbRow[]) {
   };
 }
 
-export function buildProgressStats(climbs: ClimbRow[], range: ProgressRange) {
+export function buildProgressStats(climbs: ClimbRow[], range: ProgressRange, sessionNotesByDate: Record<string, string> = {}) {
   const completedClimbs = climbs.filter((climb) => climb.status === "completed");
   const filteredClimbs = filterClimbsByRange(completedClimbs, range);
   const { buckets, cadenceLabel } = buildProgressBuckets(filteredClimbs, range);
-  const dailyRecap = buildDailyRecap(completedClimbs);
+  const dailyRecap = buildDailyRecap(completedClimbs, sessionNotesByDate);
   const activeWeeks = countUniqueWeeks(filteredClimbs);
   const totalWeeks = countCalendarWeeksInRange(range, filteredClimbs);
   const flashedClimbs = filteredClimbs.filter((climb) => climb.flashed);
@@ -493,7 +493,7 @@ function formatPersonalBest(climb: ClimbRow) {
   return `${climb.grade}${climb.grade_modifier ?? ""}${flashText}`;
 }
 
-function buildDailyRecap(climbs: ClimbRow[]) {
+function buildDailyRecap(climbs: ClimbRow[], sessionNotesByDate: Record<string, string>) {
   if (climbs.length === 0) {
     return null;
   }
@@ -518,6 +518,7 @@ function buildDailyRecap(climbs: ClimbRow[]) {
   return {
     climbedOn: mostRecentDate,
     isToday: mostRecentDate === todayKey,
+    sessionNote: sessionNotesByDate[mostRecentDate] ?? "",
     totalXp,
     sends: dayClimbs.length,
     flashedCount,

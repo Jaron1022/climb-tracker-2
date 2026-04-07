@@ -72,6 +72,15 @@ create table if not exists public.session_kudos (
   check (sender_id <> recipient_id)
 );
 
+create table if not exists public.session_notes (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid not null references public.profiles (id) on delete cascade,
+  session_on date not null,
+  note text not null,
+  created_at timestamptz not null default timezone('utc'::text, now()),
+  updated_at timestamptz not null default timezone('utc'::text, now())
+);
+
 create index if not exists climbs_profile_id_created_at_idx on public.climbs (profile_id, climbed_on desc, created_at desc);
 create index if not exists projects_profile_id_last_worked_idx on public.projects (profile_id, last_worked_on desc, created_at desc);
 create unique index if not exists friendships_unique_pair_idx on public.friendships (least(requester_id, addressee_id), greatest(requester_id, addressee_id));
@@ -80,12 +89,15 @@ create index if not exists friendships_addressee_idx on public.friendships (addr
 create unique index if not exists session_kudos_unique_session_like_idx on public.session_kudos (sender_id, recipient_id, climbed_on);
 create index if not exists session_kudos_recipient_idx on public.session_kudos (recipient_id, climbed_on desc, created_at desc);
 create index if not exists session_kudos_sender_idx on public.session_kudos (sender_id, created_at desc);
+create unique index if not exists session_notes_profile_date_idx on public.session_notes (profile_id, session_on);
+create index if not exists session_notes_profile_idx on public.session_notes (profile_id, session_on desc, updated_at desc);
 
 alter table public.profiles enable row level security;
 alter table public.climbs enable row level security;
 alter table public.projects enable row level security;
 alter table public.friendships enable row level security;
 alter table public.session_kudos enable row level security;
+alter table public.session_notes enable row level security;
 
 drop policy if exists "profiles_select_own" on public.profiles;
 create policy "profiles_select_own"
@@ -246,3 +258,45 @@ create policy "session_kudos_delete_own"
 on public.session_kudos
 for delete
 using (auth.uid() = sender_id);
+
+drop policy if exists "session_notes_select_own" on public.session_notes;
+create policy "session_notes_select_own"
+on public.session_notes
+for select
+using (auth.uid() = profile_id);
+
+drop policy if exists "session_notes_select_friends" on public.session_notes;
+create policy "session_notes_select_friends"
+on public.session_notes
+for select
+using (
+  exists (
+    select 1
+    from public.friendships
+    where friendships.status = 'accepted'
+      and (
+        (friendships.requester_id = auth.uid() and friendships.addressee_id = session_notes.profile_id)
+        or
+        (friendships.addressee_id = auth.uid() and friendships.requester_id = session_notes.profile_id)
+      )
+  )
+);
+
+drop policy if exists "session_notes_insert_own" on public.session_notes;
+create policy "session_notes_insert_own"
+on public.session_notes
+for insert
+with check (auth.uid() = profile_id);
+
+drop policy if exists "session_notes_update_own" on public.session_notes;
+create policy "session_notes_update_own"
+on public.session_notes
+for update
+using (auth.uid() = profile_id)
+with check (auth.uid() = profile_id);
+
+drop policy if exists "session_notes_delete_own" on public.session_notes;
+create policy "session_notes_delete_own"
+on public.session_notes
+for delete
+using (auth.uid() = profile_id);

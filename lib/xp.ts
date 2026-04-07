@@ -68,6 +68,7 @@ export function createDefaultForm(): ClimbForm {
     styleTags: [] as StyleTag[],
     color: "",
     notes: "",
+    sessionNote: "",
     date: formatLocalDateKey(new Date())
   };
 }

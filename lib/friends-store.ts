@@ -9,6 +9,8 @@ import type {
   IncomingFriendRequest,
   Grade,
   ProfileSearchRow,
+  ReceivedKudosInboxItem,
+  SessionNoteRow,
   SessionKudosRow,
   SessionKudosSummary
 } from "@/lib/types";
@@ -310,6 +312,79 @@ export async function fetchReceivedSessionKudos(userId: string) {
 
   return ((data ?? []) as Array<{ climbed_on: string }>).reduce<Record<string, number>>((accumulator, row) => {
     accumulator[row.climbed_on] = (accumulator[row.climbed_on] ?? 0) + 1;
+    return accumulator;
+  }, {});
+}
+
+export async function fetchReceivedKudosInbox(userId: string) {
+  const supabase = getSupabaseBrowserClient() as any;
+  const { data, error } = await supabase
+    .from("session_kudos")
+    .select("*")
+    .eq("recipient_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(30);
+
+  if (error) {
+    throw error;
+  }
+
+  const kudosRows = (data ?? []) as SessionKudosRow[];
+  if (kudosRows.length === 0) {
+    return [] as ReceivedKudosInboxItem[];
+  }
+
+  const senderIds = Array.from(new Set(kudosRows.map((row) => row.sender_id)));
+  const { data: profileData, error: profileError } = await supabase
+    .from("profiles")
+    .select("*")
+    .in("id", senderIds);
+
+  if (profileError) {
+    throw profileError;
+  }
+
+  const profilesById = new Map<string, any>((profileData ?? []).map((profile: any) => [profile.id, profile]));
+
+  return kudosRows.map((row) => ({
+    id: row.id,
+    senderId: row.sender_id,
+    senderName: profilesById.get(row.sender_id)?.display_name ?? "Climber",
+    senderAvatarUrl: profilesById.get(row.sender_id)?.avatar_url ?? null,
+    senderSelectedEmblems: profilesById.get(row.sender_id)?.selected_emblems ?? [],
+    climbedOn: row.climbed_on,
+    createdAt: row.created_at
+  }));
+}
+
+export async function fetchFriendSessionNotes(feed: FriendFeedClimb[]) {
+  if (feed.length === 0) {
+    return {} as Record<string, string>;
+  }
+
+  const supabase = getSupabaseBrowserClient() as any;
+  const profileIds = Array.from(new Set(feed.map((climb) => climb.profile_id)));
+  const sessionIds = new Set(feed.map((climb) => `${climb.profile_id}:${climb.climbed_on}`));
+  const sessionDates = Array.from(new Set(feed.map((climb) => climb.climbed_on))).sort();
+  const earliestDate = sessionDates[0];
+  const latestDate = sessionDates[sessionDates.length - 1];
+
+  const { data, error } = await supabase
+    .from("session_notes")
+    .select("*")
+    .in("profile_id", profileIds)
+    .gte("session_on", earliestDate)
+    .lte("session_on", latestDate);
+
+  if (error) {
+    throw error;
+  }
+
+  return ((data ?? []) as SessionNoteRow[]).reduce<Record<string, string>>((accumulator, row) => {
+    const sessionId = `${row.profile_id}:${row.session_on}`;
+    if (sessionIds.has(sessionId)) {
+      accumulator[sessionId] = row.note;
+    }
     return accumulator;
   }, {});
 }
