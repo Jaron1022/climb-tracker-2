@@ -1347,7 +1347,7 @@ export default function HomePage() {
                       {session.sendCount > 0 ? <span className="mini-badge">{session.sendCount} sends</span> : null}
                       {session.projectCount > 0 ? <span className="mini-badge">{session.projectCount} project{session.projectCount > 1 ? "s" : ""}</span> : null}
                       {session.totalXp > 0 ? <span className="mini-badge ready">+{session.totalXp} XP</span> : null}
-                      <span className="mini-badge">Top {session.hardestLabel}</span>
+                      <span className="mini-badge session-grade-badge">Top {session.hardestLabel}</span>
                       {session.flashCount > 0 ? <span className="mini-badge ready">{session.flashCount} flash{session.flashCount > 1 ? "es" : ""}</span> : null}
                     </div>
                     {session.note ? <p className="muted helper-copy friend-session-note">{session.note}</p> : null}
@@ -2670,7 +2670,7 @@ export default function HomePage() {
                         {progressStats.dailyRecap.sends > 0 ? <span className="daily-pill">{progressStats.dailyRecap.sends} sends</span> : null}
                         {progressStats.dailyRecap.projectCount > 0 ? <span className="daily-pill">{progressStats.dailyRecap.projectCount} project{progressStats.dailyRecap.projectCount > 1 ? "s" : ""}</span> : null}
                         {progressStats.dailyRecap.totalXp > 0 ? <span className="daily-pill">+{progressStats.dailyRecap.totalXp} XP</span> : null}
-                        {progressStats.dailyRecap.topGrade ? <span className="daily-pill">Top send {progressStats.dailyRecap.topGrade}</span> : null}
+                        {progressStats.dailyRecap.topGrade ? <span className="daily-pill session-grade-pill">Top send {progressStats.dailyRecap.topGrade}</span> : null}
                         {dailyRecapKudosCount > 0 ? <span className="daily-pill daily-pill-kudos">{dailyRecapKudosCount} kudos</span> : null}
                       </div>
                       {progressStats.dailyRecap.sessionNote ? (
@@ -3263,7 +3263,7 @@ export default function HomePage() {
                                     <div className="tag-row friend-session-summary">
                                       <span className="mini-badge">{session.sendCount} sends</span>
                                       <span className="mini-badge ready">+{session.totalXp} XP</span>
-                                      <span className="mini-badge">Top {session.hardestLabel}</span>
+                                      <span className="mini-badge session-grade-badge">Top {session.hardestLabel}</span>
                                       {session.flashCount > 0 ? <span className="mini-badge ready">{session.flashCount} flash{session.flashCount > 1 ? "es" : ""}</span> : null}
                                     </div>
                                     {session.note ? <p className="muted helper-copy friend-session-note">{session.note}</p> : null}

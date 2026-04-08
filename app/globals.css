@@ -1981,6 +1981,13 @@ button {
   border-color: color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
+.session-grade-pill,
+.session-grade-badge {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--line) 86%, transparent);
+  background: color-mix(in srgb, var(--surface-control) 96%, var(--surface));
+}
+
 .daily-recap-list {
   position: relative;
   z-index: 1;
