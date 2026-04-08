@@ -837,6 +837,7 @@ button {
   border: 1px solid color-mix(in srgb, var(--line) 86%, transparent);
   border-radius: 18px;
   background: color-mix(in srgb, var(--surface-control) 94%, transparent);
+  color: var(--text);
 }
 
 .friend-session-climb-row.is-clickable {
@@ -3286,6 +3287,11 @@ button {
   align-items: center;
   flex-wrap: wrap;
   gap: 0.45rem;
+}
+
+.history-title-row strong,
+.friend-session-climb-row strong {
+  color: var(--text);
 }
 
 .history-description {
