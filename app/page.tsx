@@ -438,7 +438,7 @@ export default function HomePage() {
         await ensureProfile(user.id, displayName.trim());
         setCurrentUserEmail(user.email ?? "");
         await syncUserData(user.id);
-        setSuccess("Account created. You can start logging climbs now.");
+        setSuccess("Account created.");
       } else {
         const user = await signInWithEmail(email.trim(), password);
         setCurrentUserEmail(user.email ?? "");
@@ -474,7 +474,7 @@ export default function HomePage() {
       setError("");
       setSuccess("");
       await requestPasswordReset(targetEmail, window.location.origin);
-      setSuccess(`Password reset email sent to ${targetEmail}.`);
+      setSuccess(`Reset email sent to ${targetEmail}.`);
     } catch (err) {
       setError(getMessage(err));
     } finally {
@@ -516,7 +516,7 @@ export default function HomePage() {
       if (typeof window !== "undefined") {
         window.history.replaceState({}, document.title, window.location.pathname);
       }
-      setSuccess("Password updated. You can sign in with your new password now.");
+      setSuccess("Password updated.");
     } catch (err) {
       setError(getMessage(err));
     } finally {
@@ -565,7 +565,7 @@ export default function HomePage() {
       const updatedProfile = await updateSelectedEmblems(activeProfileId, selectedEmblemDraft);
       setActiveProfile(updatedProfile);
       setIsEmblemPickerOpen(false);
-      setSuccess("Emblems updated.");
+      setSuccess("Emblems saved.");
     } catch (err) {
       setError(getMessage(err));
     } finally {
@@ -617,7 +617,7 @@ export default function HomePage() {
       const updatedProfile = await updateDisplayName(activeProfileId, accountDisplayName.trim());
       setActiveProfile(updatedProfile);
       setAccountDisplayName(updatedProfile.display_name);
-      setSuccess("Name updated.");
+      setSuccess("Name saved.");
     } catch (err) {
       setError(getMessage(err));
     } finally {
@@ -651,7 +651,7 @@ export default function HomePage() {
       setActiveProfile(updatedProfile);
       setAccountDisplayName(updatedProfile.display_name);
       await refreshFriendsView();
-      setSuccess("Profile photo updated.");
+      setSuccess("Profile photo saved.");
     } catch (err) {
       setError(getMessage(err));
     } finally {
@@ -694,7 +694,7 @@ export default function HomePage() {
       setSuccess("");
       const updatedProfile = await updateSelectedTheme(activeProfileId, selectedThemeDraft);
       setActiveProfile(updatedProfile);
-      setSuccess("Theme updated.");
+      setSuccess("Theme saved.");
     } catch (err) {
       setError(getMessage(err));
     } finally {
@@ -778,7 +778,7 @@ export default function HomePage() {
       setIsComposerOpen(false);
       setShowSaveBurst(true);
       window.setTimeout(() => setShowSaveBurst(false), 1600);
-      setSuccess(editingClimb ? "Climb updated." : "Climb logged.");
+      setSuccess(editingClimb ? "Climb saved." : "Climb logged.");
     } catch (err) {
       setError(getMessage(err));
     } finally {
@@ -830,7 +830,7 @@ export default function HomePage() {
         cameraCaptureInputRef.current.value = "";
       }
       setIsProjectComposerOpen(false);
-      setSuccess("Project saved.");
+      setSuccess("Project added.");
     } catch (err) {
       setError(getMessage(err));
     } finally {
@@ -854,7 +854,7 @@ export default function HomePage() {
       setSuccess("");
       await updateProjectSessionForUser(activeProfileId, project.id, todayKey, incrementSessionCount);
       await refreshProjectsView();
-      setSuccess(incrementSessionCount ? "Project session logged." : "Project already counted for today.");
+      setSuccess(incrementSessionCount ? "Project session saved." : "Project already counted today.");
     } catch (err) {
       setError(getMessage(err));
     } finally {
@@ -1241,7 +1241,7 @@ export default function HomePage() {
         return next;
       });
       setIsSessionNoteOpen(false);
-      setSuccess(trimmed ? "Session note saved." : "Session note removed.");
+      setSuccess(trimmed ? "Session note saved." : "Session note cleared.");
     } catch (err) {
       setError(getMessage(err));
     } finally {
@@ -1265,7 +1265,7 @@ export default function HomePage() {
 
         <div className="feed history-feed">
           {historySessions.length === 0 ? (
-            <p className="empty-copy">No sessions yet. Log a climb and your days will start grouping here.</p>
+            <p className="empty-copy">No sessions yet. Log a climb and your climbing days will show up here.</p>
           ) : (
             historySessions.map((session) => {
               const isExpanded = expandedFriendSessionId === session.id;
@@ -1304,7 +1304,7 @@ export default function HomePage() {
                         <h3>{session.headline}</h3>
                       </div>
                       <button className="text-button session-note-trigger" onClick={() => openSessionNoteEditor(session.climbedOn)} type="button">
-                        {session.note ? "Edit note" : "Add note"}
+                        {session.note ? "Edit session note" : "Add session note"}
                       </button>
                     </div>
                     <div className="tag-row friend-session-summary">
@@ -1320,7 +1320,7 @@ export default function HomePage() {
                         onClick={() => setExpandedFriendSessionId((current) => (current === session.id ? "" : session.id))}
                         type="button"
                       >
-                        {isExpanded ? "Hide climbs" : "View climbs"}
+                        {isExpanded ? "Hide climb list" : "Show climb list"}
                       </button>
                     </div>
                     {isExpanded ? (
@@ -1631,7 +1631,7 @@ export default function HomePage() {
             ) : null}
             {showLoadMore && hasMoreHistory ? (
               <button className="secondary-button" onClick={() => setHistoryVisibleCount((current) => current + 20)} type="button">
-                Load 20 more
+                Show 20 more
               </button>
             ) : null}
           </div>
@@ -1922,11 +1922,11 @@ export default function HomePage() {
             <div className="section-title-row">
               <div>
                 <p className="eyebrow">Inbox</p>
-                <h2>Social updates</h2>
+                <h2>Inbox</h2>
               </div>
             </div>
             {inboxItems.length === 0 ? (
-              <p className="empty-copy">Friend requests and kudos will show up here.</p>
+              <p className="empty-copy">Friend requests and kudos will show up here as they come in.</p>
             ) : (
               <div className="friends-list inbox-list">
                 {inboxItems.map((item) =>
@@ -2562,7 +2562,7 @@ export default function HomePage() {
                   <div className="section-title-row">
                     <div>
                       <p className="eyebrow">Daily recap</p>
-                      <h2>{progressStats.dailyRecap?.headline ?? "No session logged yet"}</h2>
+                      <h2>{progressStats.dailyRecap?.headline ?? "No session yet"}</h2>
                     </div>
                     {progressStats.dailyRecap ? (
                       <button
@@ -2570,7 +2570,7 @@ export default function HomePage() {
                         onClick={() => openSessionNoteEditor(progressStats.dailyRecap!.climbedOn)}
                         type="button"
                       >
-                        {progressStats.dailyRecap.sessionNote ? "Edit note" : "Add note"}
+                        {progressStats.dailyRecap.sessionNote ? "Edit session note" : "Add session note"}
                       </button>
                     ) : null}
                   </div>
@@ -2716,7 +2716,7 @@ export default function HomePage() {
                       {activeAction === "avatar" ? "Uploading..." : activeProfile.avatar_url ? "Change profile photo" : "Add profile photo"}
                     </button>
                       <button className="secondary-button" disabled={loading} onClick={openEmblemPicker} type="button">
-                        Choose emblems
+                        Edit emblems
                       </button>
                     </div>
                   </div>
@@ -2888,7 +2888,7 @@ export default function HomePage() {
                       {friendSearch.trim().length === 0 ? (
                         <p className="empty-copy">Search for a climber by display name to send a friend request.</p>
                       ) : friendResults.length === 0 ? (
-                        <p className="empty-copy">No climbers matched that search yet.</p>
+                        <p className="empty-copy">No climbers matched that search.</p>
                       ) : (
                         friendResults.map((result) => {
                           const alreadyFriends = friends.some((friend) => friend.friendId === result.id);
@@ -3151,7 +3151,7 @@ export default function HomePage() {
                                         onClick={() => setExpandedFriendSessionId((current) => (current === session.id ? "" : session.id))}
                                         type="button"
                                       >
-                                        {isExpanded ? "Hide climbs" : "View climbs"}
+                                        {isExpanded ? "Hide climb list" : "Show climb list"}
                                       </button>
                                       <button
                                         className={clsx("kudos-button", session.likedByViewer && "liked")}
@@ -3226,7 +3226,7 @@ export default function HomePage() {
                           {hasMoreFriendFeed ? (
                             <div className="history-footer">
                               <button className="secondary-button" onClick={() => setFriendFeedVisibleCount((current) => current + 20)} type="button">
-                                Load 20 more
+                                Show 20 more
                               </button>
                             </div>
                           ) : null}
